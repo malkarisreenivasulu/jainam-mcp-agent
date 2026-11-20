@@ -134,6 +134,7 @@ def test_setup_automatic_callback(tmp_path, monkeypatch, capsys):
     client = Mock()
     client.exchange_auth_code.return_value = {"userSession": "synthetic-session"}
     monkeypatch.setattr(cli, "Client", lambda **kw: client)
+    monkeypatch.setattr(cli.Service, "account", lambda *a, **kw: {"ok": True})
     path = tmp_path / "credentials.json"
     assert cli.main(["--config", str(path), "setup"]) == 0
     assert load(path).user_id == "synthetic-user"

@@ -10,7 +10,7 @@ Start with `python -m jainam_mcp doctor`. To test broker connectivity explicitly
 | `No module named jainam_mcp` | Use this project's `.venv` Python and install with `python -m pip install .` |
 | `NOT_CONFIGURED` | Run `configure` in your own terminal under the same OS user as the client |
 | Partial environment configuration | Set both JAINAM variables or unset both; no partial file fallback |
-| `SESSION_EXPIRED_OR_DENIED` | Renew your own session using login/configure and restart every MCP client process |
+| `SESSION_EXPIRED_OR_DENIED` | Finish browser renewal and ask again, or open Connect; no server restart is required |
 | `BROKER_ERROR` | Check account entitlement and current API docs; a broker may report errors with HTTP 200 |
 | `RATE_LIMITED` | Stop repeated requests and retry later according to broker guidance |
 | `NETWORK_ERROR` | Check internet, Jainam availability and certificates; no DNS/IP patches are installed |
@@ -30,7 +30,7 @@ When reporting a bug include OS, Python/package versions, failing tool name and 
 
 ## First-time sign-in checklist (v0.1.3)
 
-- `NOT_CONFIGURED`: installation succeeded but no session has been saved. Run `python -m jainam_mcp setup`. `configure` requires an existing session; it does not exchange APP Code or Secret Key.
+- `NOT_CONFIGURED`: installation succeeded but no session has been saved. Run Connect.command / Connect.bat or `jainam-mcp connect`. `configure` requires an existing session; it does not exchange APP Code or Secret Key.
 - `connection_tested: false` with `doctor --online`: missing credentials prevented a broker request. Resolve setup first.
 - `zsh: suspended`: Ctrl+Z suspended setup. Use `jobs` to inspect suspended commands, resume the intended one with `fg`, and cancel it with Ctrl+C before starting fresh.
 - A credentials JSON path is a file, not a shell command. Do not execute or paste its contents. It is created only after successful setup/configure.
@@ -43,7 +43,7 @@ A successful callback means the redirect reached this computer. It does not mean
 Jainam issued a usable session. Do not paste the callback URL into a shell or chat.
 
 - `AUTH_EXCHANGE_REJECTED`: Jainam explicitly rejected the exchange (including HTTP 200 with `status: NotOk`). Run setup again for a fresh authorization code. If the APP Code/Secret Key pair is correct and it repeats, confirm API entitlement/app status with Jainam. This error alone does not prove a wrong secret.
-- `AUTH_RESPONSE_UNSUPPORTED`: response lacks a unique explicitly named `userSession`. The printed **safe response shape** contains only fixed field names, types and array counts, never raw response values or arbitrary field names. Share only that diagnostic. Do not rename an unknown `token` field to `userSession` without a verified broker contract.
+- `AUTH_RESPONSE_UNSUPPORTED`: response lacks a unique explicitly named `userSession`. The printed **safe response shape** contains fixed field names plus filtered credential field names, types and array counts, never raw response values. Share only that diagnostic. Do not rename an unknown `token` field to `userSession` without a verified broker contract.
 - `AUTH_HTTP_ERROR`, `AUTH_NON_JSON`, `AUTH_NETWORK_ERROR`: the HTTP status, response format or network prevented exchange. Retry with a fresh authorization after resolving connectivity/service issues.
 
 Failed setup does not overwrite an existing credentials file. `configure` cannot
@@ -51,3 +51,13 @@ repair a rejected exchange; it only stores a session already issued by Jainam.
 
 The v0.1.3 error “No unique userSession found” conflated a broker rejection with
 an unsupported response schema. Upgrade to v0.1.4 for explicit diagnostics.
+
+## Everyday use (v0.1.5)
+
+Open Connect.command (macOS) or Connect.bat (Windows). Enter APP Code/Secret Key
+once; finish browser sign-in whenever Jainam requires renewal. Wait for Connected.
+If the local MCP says login is running, complete the browser flow and ask again.
+If renewal failed, open Connect to retry. Rotated keys need connect --replace-app.
+Only an explicit session denial starts renewal; network/rate-limit errors do not.
+Multiple local MCP processes can compete for port 8765; complete one sign-in and
+retry in the others. External callback users must use connect --manual.

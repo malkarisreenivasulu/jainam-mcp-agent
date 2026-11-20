@@ -5,7 +5,7 @@
 This project is distributed as source. It contains **no maintainer broker credentials**, personal token caches, account exports or private KuberaOS files. Each user supplies their own credentials locally.
 
 - No credentials are passed as MCP tool arguments or returned by the configuration-status tool.
-- `setup`, `configure` and `login` use hidden terminal input, not command-line secret arguments. They must be run by a human in a trusted local terminal.
+- `connect`, `setup`, `configure` and `login` use hidden terminal input, not command-line secret arguments. They must be run by a human in a trusted local terminal.
 - The saved session is plaintext outside the checkout: POSIX file mode 0600, with a newly created final directory mode 0700. On Windows use private account ACLs; POSIX modes do not establish equivalent ACL guarantees.
 - `login` keeps app secrets/auth codes in process memory only; only user ID/session are persisted. Python cannot promise immediate memory zeroization.
 - Environment variables override the file only when the complete pair is provided. This server does not discover `.env` or arbitrary token files.
@@ -19,7 +19,7 @@ Stdio is the only server transport. It runs as your local OS user, has no login 
 
 Account results intentionally cross into your chosen AI client when called. Balances, holdings, orders and trades are private data even when session fields are removed. Review that provider's privacy/retention settings and tool permissions. Treat broker text/contract names as data, not executable instructions.
 
-ChatGPT tunnels are an optional separate, user-managed connection. Follow OpenAI's access controls and secret handling. Do not turn this server into an unauthenticated public endpoint. This release does not implement remote OAuth, network hosting, background services or telemetry.
+ChatGPT tunnels are an optional separate, user-managed connection. Follow OpenAI's access controls and secret handling. Do not turn this server into an unauthenticated public endpoint. This release does not implement remote OAuth, network hosting, installed background services or telemetry.
 
 The repository's synthetic tests, scanner and CI reduce accidental disclosure; they are not an independent penetration test, certification, or promise of defect-free code. No real-account/client UI integration is implied by mocked tests.
 
@@ -39,5 +39,19 @@ at `/callback`. The listener is separate from the stdio MCP transport, closes on
 completion/cancellation/timeout, and never logs callback queries. It does not use
 an undocumented OAuth state parameter: no cryptographic callback correlation is
 claimed. Use a trusted local machine and your own registered developer app. The
-authorization code is exchanged using that app's secret; the secret/code are not
-persisted. Use `login --manual` for a callback you already control.
+authorization code is exchanged using that app's secret; authorization codes are not persisted. `connect` and `setup` remember the app
+code and Secret Key in a separate private plaintext file for renewal; `login`
+does not remember app details. Use `login --manual` for a callback you already control.
+
+## Remembered developer app (v0.1.5)
+
+The user-requested one-time connect flow stores app details outside the project
+in app_credentials.json with atomic writes and POSIX mode 0600. Windows users
+rely on their private account ACLs. This is plaintext storage, not a vault. Do not
+copy it into projects, client JSON, issues, chats or source distributions. Delete
+it as well as the session file when removing the app. A local MCP read may launch
+one browser-renewal thread using this remembered app when credentials are absent
+or the broker explicitly denies session access. It does not collect passwords,
+bypass MFA, print errors into protocol stdout, or retry indefinitely. Each MCP
+process coordinates its own login; separate clients may contend for port 8765.
+No remote OAuth/public service is provided.

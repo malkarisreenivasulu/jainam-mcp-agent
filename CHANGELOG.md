@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.5
+
+- Add one-command connect and double-click macOS/Windows launchers; setup aliases connect.
+- Remember developer app details in a separate private plaintext file outside the project, with explicit on-screen disclosure. Add --replace-app for rotated keys.
+- Reuse valid sessions and verify a read-only funds request before reporting Connected.
+- Local MCP reads can start one nonblocking browser renewal on missing/denied sessions; reload renewed credentials on subsequent reads without a restart. No secret prompts in MCP, browser retry loops, or public OAuth service.
+- Consider alternate explicitly token/session-named fields only with successful broker read validation; report filtered field names without values for unsupported schemas.
+- Production login remains unverified; synthetic tests cannot establish a particular app's entitlement or response contract.
+
 ## 0.1.4
 
 - Match the saved Jainam vendor Postman checksum-only session-exchange request body.

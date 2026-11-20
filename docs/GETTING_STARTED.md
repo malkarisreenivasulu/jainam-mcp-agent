@@ -21,7 +21,7 @@ If `python` is not found on macOS/Linux, try `python3`. On Windows try `py -3`. 
 ## 2. Download the released source
 
 ```sh
-git clone --branch v0.1.4 https://github.com/malkarisreenivasulu/jainam-mcp-agent.git
+git clone --branch v0.1.5 https://github.com/malkarisreenivasulu/jainam-mcp-agent.git
 cd jainam-mcp-agent
 ```
 
@@ -48,11 +48,18 @@ For subsequent Windows commands in this guide, use `.\.venv\Scripts\python.exe` 
 
 The installation downloads the MCP SDK and the maintainer's public Jainam Python SDK, pinned to the commit behind v0.1.1. Nothing is read from the maintainer's private computer or from your existing project `.env` files.
 
-## 4. Choose one sign-in method
+## 4. Connect once, then ask
 
-A **user session** is a secret temporary credential issued by Jainam. Your developer **appCode** identifies an app; **apiSecret** signs its login exchange. They are different from the issued session.
+For the normal local setup, double-click **Connect.command** on macOS or **Connect.bat** on Windows. Or run `python3 scripts/connect.py` (Windows: `py -3 scripts\connect.py`). The launcher prepares the environment if needed; you do not need to activate it or copy Python paths.
 
-### If you already have a valid session
+On first use, enter your developer APP Code and Secret Key once. These are saved in a private **plaintext** `app_credentials.json` file outside the project, next to the separate session file. This enables renewal without asking for keys again. Anyone with access to that private file can read the app secret; this is not OS keychain encryption. No values are added to this repository, launch arguments, client JSON or GitHub. Authorization codes are never saved. `setup` is an alias for this one-time connection flow; advanced `login` remains a non-remembering forced sign-in method.
+
+**Every later use:** open Connect again, or ask through your configured local MCP client. Valid sessions are reused. Missing/expired sessions open browser sign-in using the remembered app; finish login and ask again. One login runs at a time within a server, and failures stop rather than opening repeated tabs. No terminal input or long-running wait is added to MCP calls. Updated sessions are picked up on the next read without restarting the server. Network/rate-limit/unknown broker errors do not automatically force login.
+
+Use `python3 scripts/connect.py --replace-app` after regenerating the Secret Key or switching developer apps. The same flags are available through `jainam-mcp connect` in the virtualenv. Headless/tunneled sessions and external callbacks may require `--manual` in a local interactive terminal. Only local loopback browser sign-in supports the automatic path. Existing JAINAM_USER_ID/JAINAM_USER_SESSION environment overrides must be cleared before file-based renewal.
+
+### Advanced: existing issued session
+
 
 ```sh
 python -m jainam_mcp configure
@@ -82,12 +89,12 @@ The default is built into the MCP, but **registration in your Jainam app is manu
 4. In the activated environment run:
 
    ```sh
-   python -m jainam_mcp setup
+   python -m jainam_mcp connect
    ```
 
 5. Enter APP Code, then Secret Key at the hidden prompts. Nothing appearing while you type or paste is normal. Press Enter after each value. Do not press Ctrl+Z: that suspends the command instead of completing it. Ctrl+C cancels.
-6. Complete Jainam login/MFA in the browser on **the same computer** within three minutes. Jainam redirects to your registered URL. The local listener captures `userId` and `authCode`; you do not copy them. Return to Terminal for the saved-session confirmation. The Secret Key and auth code are not saved.
-7. Run `python -m jainam_mcp doctor --online`. Proceed only when `credentials_configured` and `online_ok` are true. A saved session alone does not prove broker access.
+6. Complete Jainam login/MFA in the browser on **the same computer** within three minutes. Jainam redirects to your registered URL. The local listener captures `userId` and `authCode`; you do not copy them. Return to Terminal for the saved-session confirmation. The app details are remembered privately for future sign-ins; auth codes are never saved.
+7. Wait for **Connected**: setup verifies one read-only funds request before reporting success. `doctor --online` remains available for diagnostics.
 8. Generate your client configuration below and restart your MCP client.
 
 The listener binds only to `127.0.0.1:8765`, starts before the browser opens, suppresses callback request logging, and closes after capture, cancellation or timeout. Never expose this port publicly. It expects GET callback query parameters named `userId` and `authCode`. This is broker SSO, not MCP OAuth. No broker password is collected by the package. No undocumented state parameter is added; the broker callback is not claimed to have cryptographic state correlation. The broker session exchange validates the authorization code with your app secret.
@@ -112,13 +119,13 @@ Keep your private credentials file; do not delete or publish it. From your clone
 
 ```sh
 git fetch origin --tags
-git switch --detach v0.1.4
+git switch --detach v0.1.5
 python -m pip install .
-python -m jainam_mcp setup
+python -m jainam_mcp connect
 python -m jainam_mcp doctor --online
 ```
 
-Restart each MCP client after renewal. If the existing clone is elsewhere, use its activated environment. Only run commands for your operating system; Windows `py` and `Scripts\python.exe` commands do not work in macOS zsh.
+The updated local MCP reloads renewed session files automatically. If the existing clone is elsewhere, use its activated environment. Only run commands for your operating system; Windows `py` and `Scripts\python.exe` commands do not work in macOS zsh.
 
 ### Advanced: environment variables
 
@@ -155,6 +162,6 @@ If you run `serve` yourself, a quiet terminal is normal: it waits for MCP protoc
 
 ## Renew a session / remove the project
 
-When the broker expires a session, rerun `login` or `configure`, then **restart the MCP server in each client**. Sessions load once per server process. Expiry is set by Jainam, not promised by this project.
+When the broker expires a session, a local read can open browser renewal using remembered app details. Finish browser sign-in and ask again, or open Connect yourself. The server reloads renewed files. Expiry is controlled by Jainam.
 
-To remove it, delete the client's `jainam` entry and the local credentials file, revoke the session/app at Jainam where available, then delete the project folder. Uninstalling the Python package alone does not revoke a broker session.
+To remove it, delete the client's `jainam` entry and the local credentials file, revoke the session/app at Jainam where available, delete the private app_credentials.json as well, then delete the project folder. Uninstalling the Python package alone does not revoke a broker session.

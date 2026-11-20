@@ -22,8 +22,11 @@ def test_rejected_response_cannot_smuggle_session():
 
 
 def test_unrecognized_response_diagnostic_contains_no_values_or_arbitrary_keys():
-    payload = {"result": [{"token": "synthetic-token", "synthetic-private-key": "private"}],
-               "message": "synthetic-secret", "status": "synthetic-status"}
+    payload = {
+        "result": [{"token": "synthetic-token", "synthetic-private-key": "private"}],
+        "message": "synthetic-secret",
+        "status": "synthetic-status",
+    }
     with pytest.raises(ConfigError, match="AUTH_RESPONSE_UNSUPPORTED") as error:
         cli.extract_session(payload)
     assert '"token":"str"' in str(error.value)
@@ -31,13 +34,16 @@ def test_unrecognized_response_diagnostic_contains_no_values_or_arbitrary_keys()
     assert "private" not in str(error.value)
 
 
-@pytest.mark.parametrize("http_status,payload,expected", [
-    (200, {"status": "NotOk", "message": "synthetic-secret", "result": []}, "AUTH_EXCHANGE_REJECTED"),
-    (403, {"message": "synthetic-secret"}, "AUTH_HTTP_ERROR"),
-    (302, {}, "AUTH_HTTP_ERROR"),
-    (200, None, "AUTH_NON_JSON"),
-    (200, {"status": "Ok", "result": [{"userSession": "synthetic-session"}]}, None),
-])
+@pytest.mark.parametrize(
+    "http_status,payload,expected",
+    [
+        (200, {"status": "NotOk", "message": "synthetic-secret", "result": []}, "AUTH_EXCHANGE_REJECTED"),
+        (403, {"message": "synthetic-secret"}, "AUTH_HTTP_ERROR"),
+        (302, {}, "AUTH_HTTP_ERROR"),
+        (200, None, "AUTH_NON_JSON"),
+        (200, {"status": "Ok", "result": [{"userSession": "synthetic-session"}]}, None),
+    ],
+)
 def test_actual_sdk_exchange_wire_contract(monkeypatch, http_status, payload, expected):
     captured = []
 
@@ -85,6 +91,9 @@ def test_failed_setup_preserves_previous_credentials(tmp_path, monkeypatch, caps
     client = Mock()
     client.exchange_auth_code.return_value = {"status": "NotOk", "result": []}
     monkeypatch.setattr(cli, "Client", lambda **kw: client)
+    monkeypatch.setattr(
+        cli.Service, "account", lambda *a, **kw: {"ok": False, "error": "SESSION_EXPIRED_OR_DENIED"}
+    )
     path = tmp_path / "credentials.json"
     save(Credentials("old-user", "old-session"), path)
     original = path.read_bytes()

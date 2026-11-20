@@ -37,35 +37,24 @@ The MCP server reads data; your AI client renders charts if supported. Sector ch
 
 ## Start here
 
-1. Install **Python 3.11–3.14** and **Git**.
-2. Follow [Getting started](docs/GETTING_STARTED.md) for macOS, Windows or Linux.
-3. Connect [Claude Desktop](docs/CLAUDE.md), [VS Code](docs/VSCODE.md), or [ChatGPT](docs/CHATGPT.md).
-4. Ask: **“Use jainam_status and tell me whether it is configured.”** This first call is offline.
+1. Install Python 3.11–3.14 and Git once. Clone/download this repository, or update your existing clone to v0.1.5. **Do not clone again into a folder that already exists.**
+2. In [Jainam Developers](https://protrade.jainam.in/developers), create/edit your own app and register **Redirect URL: `http://127.0.0.1:8765/callback`**. Save/Update. Postback is separate: leave blank if permitted; if mandatory, confirm the supported configuration with Jainam. This MCP has no postback receiver.
+3. On macOS, double-click **Connect.command**. On Windows, double-click **Connect.bat**. The launcher prepares the local Python environment and installs/updates this checkout when necessary. Enter APP Code and Secret Key once, then finish Jainam sign-in in the browser.
+4. Wait for **Connected**. The command verifies account access before displaying success. Connect your AI client using its guide below, then ask for holdings or funds.
 
-**Before running setup: create or edit your app in [Jainam Developers](https://protrade.jainam.in/developers).** Register the MCP default below and click **Save/Update**. The MCP cannot fill in Jainam's app form for you.
+App details are remembered **only on your computer**, in a private plaintext file outside the repository. Sessions are separate. Do not upload either file. Subsequent connections reuse a valid session. When a local MCP read discovers a missing/expired session, saved app details let it open browser login without terminal prompts; finish login and ask again. The running MCP reloads the saved session automatically. If automatic sign-in fails, run Connect again; it does not keep opening browser tabs.
 
-| App field | What to enter |
-|---|---|
-| Redirect URL | `http://127.0.0.1:8765/callback` — enter this exact default when creating the app. |
-| Postback URL | Leave blank if Jainam permits. The MCP has no postback receiver. If required, confirm Jainam's supported setup with Jainam; do not enter a dummy URL or reuse the login callback. |
-
-`localhost` and `127.0.0.1` refer to your computer, but use the exact `127.0.0.1` URL above consistently with this package's listener. Jainam's acceptance of a loopback redirect still requires verification with your app; an external callback you control is supported by `login --manual`.
-
-If you already have Python and Git, these commands install the tagged release in an isolated folder:
+Prefer Terminal? Use the **same command every time**:
 
 ```sh
-git clone --branch v0.1.4 https://github.com/malkarisreenivasulu/jainam-mcp-agent.git
-cd jainam-mcp-agent
-python3 -m venv .venv
-# macOS/Linux:
-source .venv/bin/activate
-# Windows PowerShell instead: .venv\Scripts\Activate.ps1
-python -m pip install .
-python -m jainam_mcp setup
-python -m jainam_mcp doctor
+python3 scripts/connect.py
 ```
 
-`setup` asks for your developer **APP Code** and **Secret Key** using hidden prompts, opens Jainam sign-in, and captures the callback locally. First register **`http://127.0.0.1:8765/callback`** as your app's Redirect URL in Jainam. Your client ID alone is insufficient. If Jainam does not accept a loopback URL, use `login --manual` with a callback you control. `configure` is only for an already-issued user session. See the [step-by-step guide](docs/GETTING_STARTED.md).
+On Windows use `py -3 scripts\connect.py`. Existing virtualenv users can run `jainam-mcp connect` directly. Replace a rotated APP Code/Secret Key using `python3 scripts/connect.py --replace-app`. External callbacks use `--manual` and require manual callback input; automatic renewal is for local loopback browser login on the same computer. The developer portal setting must be registered manually; the MCP cannot update it.
+
+[Full step-by-step guide](docs/GETTING_STARTED.md) · [Troubleshooting](docs/TROUBLESHOOTING.md)
+
+Real broker authorization/entitlement still needs verification with your own app. Tests alone do not establish production login. If setup reports an unsupported response, share only its safe diagnostic, never keys or callback URLs.
 
 Generate your client configuration rather than editing Python paths by hand:
 

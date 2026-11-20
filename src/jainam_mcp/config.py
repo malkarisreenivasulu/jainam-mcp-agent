@@ -56,7 +56,12 @@ def load(path: Path | None = None) -> Credentials | None:
 
 
 def save(credentials: Credentials, path: Path | None = None) -> Path:
-    path = path or default_path()
+    return save_private(
+        {"user_id": credentials.user_id, "user_session": credentials.user_session}, path or default_path()
+    )
+
+
+def save_private(data: dict, path: Path) -> Path:
     if path.is_symlink():
         raise ConfigError("Refusing to replace a symbolic-link credentials file.")
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -64,7 +69,7 @@ def save(credentials: Credentials, path: Path | None = None) -> Path:
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as out:
             os.chmod(temporary, 0o600)
-            json.dump({"user_id": credentials.user_id, "user_session": credentials.user_session}, out)
+            json.dump(data, out)
             out.flush()
             os.fsync(out.fileno())
         os.replace(temporary, path)
@@ -72,3 +77,47 @@ def save(credentials: Credentials, path: Path | None = None) -> Path:
         if os.path.exists(temporary):
             os.unlink(temporary)
     return path
+
+
+@dataclass(frozen=True, repr=False)
+class AppCredentials:
+    app_code: str
+    api_secret: str
+    automatic_login: bool = True
+
+    def __post_init__(self):
+        if any(
+            not isinstance(v, str) or not v.strip() or "\n" in v or "\r" in v
+            for v in (self.app_code, self.api_secret)
+        ):
+            raise ConfigError("APP Code and Secret Key must be nonempty single-line values.")
+
+
+def app_path(path: Path | None = None) -> Path:
+    return (path or default_path()).with_name(
+        path.stem + ".app_credentials.json" if path else "app_credentials.json"
+    )
+
+
+def load_app(path: Path | None = None) -> AppCredentials | None:
+    destination = app_path(path)
+    if not destination.exists():
+        return None
+    if os.name == "posix" and stat.S_IMODE(destination.stat().st_mode) & 0o077:
+        raise ConfigError("Saved app settings must be private; restrict their permissions to 600.")
+    try:
+        if destination.stat().st_size > 65536:
+            raise ValueError
+        data = json.loads(destination.read_text(encoding="utf-8"))
+        if not isinstance(data.get("automatic_login", True), bool):
+            raise ValueError
+        return AppCredentials(data["app_code"], data["api_secret"], data.get("automatic_login", True))
+    except (KeyError, TypeError, ValueError, UnicodeError) as exc:
+        raise ConfigError("Invalid saved app settings. Run connect --replace-app.") from exc
+
+
+def save_app(app: AppCredentials, path: Path | None = None) -> Path:
+    return save_private(
+        {"app_code": app.app_code, "api_secret": app.api_secret, "automatic_login": app.automatic_login},
+        app_path(path),
+    )

@@ -104,24 +104,46 @@ def sanitize(value, secrets: tuple[str, ...]):
 
 
 class Service:
-    def __init__(self, credentials: Credentials | None, client_factory: Callable = Client):
+    def __init__(
+        self,
+        credentials: Credentials | None,
+        client_factory: Callable = Client,
+        *,
+        credentials_loader=None,
+        auth_required=None,
+        auth_status=None,
+        auth_success=None,
+    ):
+        self.credentials_loader = credentials_loader
+        self.auth_required = auth_required
+        self.auth_status = auth_status
+        self.auth_success = auth_success
         self.credentials = credentials
         self.client_factory = client_factory
 
+    def refresh(self):
+        if self.credentials_loader:
+            self.credentials = self.credentials_loader()
+
     def status(self) -> dict:
+        self.refresh()
         return {
             "ok": True,
             "mode": "read_only",
             "credentials_configured": self.credentials is not None,
             "connection_tested": False,
             "version": __version__,
+            **(self.auth_status() if self.auth_status else {}),
         }
 
     def _run(self, operation: Callable) -> dict:
+        self.refresh()
         if not self.credentials:
             return {
-                "ok": False, "error": "NOT_CONFIGURED",
-                "message": "Run python -m jainam_mcp setup locally (configure only for an existing session).",
+                "ok": False,
+                "error": "NOT_CONFIGURED",
+                "message": "Run jainam-mcp connect once in Terminal.",
+                **(self.auth_required() if self.auth_required else {}),
             }
         transport = ReadOnlySession()
         try:
@@ -132,12 +154,44 @@ class Service:
                 timeout=20,
             )
             result = operation(client)
+            if isinstance(result, dict):
+                state = re.sub(r"[^a-z]", "", str(result.get("status", result.get("stat", ""))).lower())
+                if state in {"notok", "nok", "error", "failed", "failure", "fail"}:
+                    message = str(result.get("message", "")).lower()
+                    denied = any(
+                        term in message
+                        for term in (
+                            "invalid session",
+                            "session expired",
+                            "invalid token",
+                            "token expired",
+                            "unauthorized",
+                            "authentication failed",
+                        )
+                    )
+                    raise APIError("Broker rejected read", 401 if denied else 200)
             cleaned = sanitize(result, (self.credentials.user_session, self.credentials.user_id))
             if len(json.dumps(cleaned, allow_nan=False).encode()) > 1024 * 1024:
                 return {"ok": False, "error": "RESPONSE_TOO_LARGE", "message": "Request a smaller result."}
+            if self.auth_success:
+                self.auth_success()
             return {"ok": True, "data": cleaned}
         except APIError as exc:
             status = exc.status_code
+            if isinstance(exc.payload, dict) and status == 200:
+                message = str(exc.payload.get("message", "")).lower()
+                if any(
+                    term in message
+                    for term in (
+                        "invalid session",
+                        "session expired",
+                        "invalid token",
+                        "token expired",
+                        "unauthorized",
+                        "authentication failed",
+                    )
+                ):
+                    status = 401
             code = (
                 "SESSION_EXPIRED_OR_DENIED"
                 if status in (401, 403)
@@ -150,6 +204,7 @@ class Service:
                 "error": code,
                 "message": "Jainam could not complete the read request.",
                 "http_status": status,
+                **(self.auth_required() if self.auth_required and status in (401, 403) else {}),
             }
         except requests.RequestException:
             return {

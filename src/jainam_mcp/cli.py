@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import getpass
 import json
+import os
 import re
 import sys
 import warnings
@@ -15,23 +16,64 @@ import requests
 from jainam_api import Client, build_login_url
 
 from jainam_mcp import __version__
-from jainam_mcp.config import ConfigError, Credentials, default_path, load, save
+from jainam_mcp.config import (
+    AppCredentials,
+    ConfigError,
+    Credentials,
+    default_path,
+    load,
+    load_app,
+    save,
+    save_app,
+)
+from jainam_mcp.connection import Renewal
 from jainam_mcp.login import CALLBACK, capture_callback
 from jainam_mcp.service import Service
 
 
 def login_response_summary(value) -> str:
-    """Report only fixed field names and types, never payload values or arbitrary keys."""
+    """Report types and filtered credential field names, never response values."""
+
     def shape(item, depth=0):
         if depth >= 4:
             return "nested"
         if isinstance(item, dict):
-            return {key: shape(item[key], depth + 1) for key in (
-                "status", "message", "result", "data", "userSession", "user_session", "token", "session"
-            ) if key in item}
+            return {
+                "credential_field_names": [
+                    key
+                    for key in item
+                    if (
+                        re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]{0,39}", key)
+                        and re.search(r"session|token|auth|user|access|jwt|login", key, re.I)
+                    )
+                ],
+                **{
+                    key: shape(item[key], depth + 1)
+                    for key in (
+                        "status",
+                        "message",
+                        "result",
+                        "data",
+                        "userSession",
+                        "user_session",
+                        "token",
+                        "session",
+                        "accessToken",
+                        "access_token",
+                        "sessionToken",
+                        "session_token",
+                        "authToken",
+                        "auth_token",
+                        "userSessionId",
+                        "userSessionToken",
+                        "sessionId",
+                        "tokenId",
+                    )
+                    if key in item
+                },
+            }
         if isinstance(item, list):
-            return {"type": "list", "count": len(item),
-                    "first": shape(item[0], depth + 1) if item else None}
+            return {"type": "list", "count": len(item), "first": shape(item[0], depth + 1) if item else None}
         return type(item).__name__
 
     return json.dumps(shape(value), separators=(",", ":"))
@@ -111,6 +153,87 @@ class LoginSession(requests.Session):
         return response
 
 
+def authorize(app, manual=False):
+    if manual:
+        if not webbrowser.open(build_login_url(app.app_code)):
+            raise ConfigError("Browser could not open. Check your default browser and retry.")
+        user_id = getpass.getpass("userId from your callback (hidden): ").strip()
+        auth_code = getpass.getpass("Fresh authCode from your callback (hidden): ").strip()
+    else:
+        user_id, auth_code = capture_callback(build_login_url(app.app_code))
+    with LoginSession() as transport:
+        response = Client(session=transport).exchange_auth_code(user_id, auth_code, app.api_secret)
+    try:
+        session = extract_session(response)
+    except ConfigError:
+        reject_failed_login(response)
+        # Alternate token names are accepted only after the broker validates the
+        # candidate in a read-only funds request. Never guess arbitrary strings.
+        candidates = set()
+
+        def visit(item):
+            if isinstance(item, dict):
+                for key, value in item.items():
+                    name = re.sub(r"[^a-z]", "", key.lower())
+                    if name in {
+                        "accesstoken",
+                        "sessiontoken",
+                        "authtoken",
+                        "usersessionid",
+                        "usersessiontoken",
+                        "usertoken",
+                        "jwt",
+                        "jwttoken",
+                        "sessionid",
+                        "tokenid",
+                    } or name.endswith(("usertoken", "sessiontoken", "accesstoken")):
+                        if not isinstance(value, str):
+                            continue
+                        if value.strip():
+                            candidates.add(value)
+                    elif isinstance(value, (dict, list)):
+                        visit(value)
+            elif isinstance(item, list):
+                for value in item:
+                    visit(value)
+
+        visit(response)
+        if len(candidates) != 1:
+            raise
+        session = candidates.pop()
+    credentials = Credentials(user_id, session)
+    result = Service(credentials).account("funds")
+    if not result["ok"]:
+        raise ConfigError("SESSION_NOT_VERIFIED: Jainam did not validate account access. No session saved.")
+    return credentials
+
+
+def connect(path, *, replace_app=False, manual=False):
+    credentials = load(path)
+    if credentials and not replace_app:
+        result = Service(credentials).account("funds")
+        if result["ok"]:
+            print("Connected. You can now ask your MCP client for your Jainam account data.")
+            return
+        if result.get("error") != "SESSION_EXPIRED_OR_DENIED":
+            raise ConfigError("Cannot check Jainam right now. Check connectivity and retry connect.")
+    if any(name in os.environ for name in ("JAINAM_USER_ID", "JAINAM_USER_SESSION")):
+        raise ConfigError("Clear old JAINAM_USER_ID / JAINAM_USER_SESSION variables before browser renewal.")
+    app = None if replace_app else load_app(path)
+    if app is None:
+        print("One-time app setup. App details will be saved privately on this computer as plaintext.")
+        print(f"In Jainam Developers, register Redirect URL: {CALLBACK}")
+        app = AppCredentials(
+            getpass.getpass("APP Code (hidden): ").strip(),
+            getpass.getpass("Secret Key (hidden): ").strip(),
+            automatic_login=not manual,
+        )
+        save_app(app, path)
+    print("Opening Jainam sign-in. Complete browser login within 3 minutes, then return here.")
+    save(authorize(app, manual or not app.automatic_login), path)
+    print("Connected. You can now ask your MCP client for your Jainam account data.")
+
+
 def configuration(client: str, config_path: Path | None = None) -> dict:
     args = ["-m", "jainam_mcp"]
     if config_path:
@@ -131,7 +254,12 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("configure", help="Store an existing session using hidden terminal prompts")
     login = sub.add_parser("login", help="Guided browser sign-in with automatic local callback")
     login.add_argument("--manual", action="store_true", help="Use an existing external callback instead")
-    sub.add_parser("setup", help="First-time guided browser sign-in")
+    for name in ("setup", "connect"):
+        command = sub.add_parser(name, help="Connect: remember app once and sign in only when needed")
+        command.add_argument(
+            "--replace-app", action="store_true", help="Replace saved app after key rotation"
+        )
+        command.add_argument("--manual", action="store_true", help="Use your external callback")
     doctor = sub.add_parser("doctor", help="Offline configuration check by default")
     doctor.add_argument("--online", action="store_true", help="Make one read-only funds request")
     client_config = sub.add_parser("client-config", help="Print credential-free client JSON")
@@ -139,7 +267,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     path = args.config.expanduser() if args.config else None
     try:
-        if args.command in {"configure", "login", "setup"}:
+        if args.command in {"configure", "login", "setup", "connect"}:
             if not sys.stdin.isatty():
                 raise ConfigError("Use an interactive terminal; refusing visible credential input.")
             warnings.filterwarnings("error", category=getpass.GetPassWarning)
@@ -153,7 +281,10 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Saved locally to {destination}. No credentials were printed.")
             print("Restart your MCP client after renewing a session.")
             return 0
-        if args.command in {"login", "setup"}:
+        if args.command in {"setup", "connect"}:
+            connect(path, replace_app=args.replace_app, manual=args.manual)
+            return 0
+        if args.command == "login":
             app_code = getpass.getpass("Your developer appCode (hidden): ").strip()
             api_secret = getpass.getpass(
                 "Your developer Secret Key / apiSecret (hidden, not saved): "
@@ -175,7 +306,14 @@ def main(argv: list[str] | None = None) -> int:
             destination = save(Credentials(user_id, extract_session(response)), path)
             print(f"Session saved locally to {destination}. Restart your MCP client.")
             return 0
-        service = Service(load(path))
+        renewal = Renewal(path, authorize)
+        service = Service(
+            load(path),
+            credentials_loader=lambda: load(path),
+            auth_required=renewal.begin if args.command == "serve" else None,
+            auth_status=renewal.status if args.command == "serve" else None,
+            auth_success=renewal.verified if args.command == "serve" else None,
+        )
         if args.command == "doctor":
             report = service.status()
             report["credentials_file_present"] = (path or default_path()).exists()

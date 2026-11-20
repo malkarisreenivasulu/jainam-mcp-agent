@@ -73,3 +73,15 @@ Production sign-in and account access remain unverified until a user completes
 setup and doctor --online successfully with their own Jainam app.
 
 Reference: https://protrade.jainam.in/open-apidocs/v2/index.html
+
+## v0.1.5 one-time configuration and renewal
+
+Regression tests cover private app storage, valid-session reuse without prompts,
+missing/expired-session renewal without repeating app input, rotated keys, network
+errors without browser launches, read-only validation of alternate token fields,
+nonblocking single-thread renewal, retry suppression after failure, and session
+reload by the already-running MCP. Launcher tests cover reusing a current install
+and avoiding login after installation failure. No real broker credentials are
+used by these tests. Actual user login remains unresolved until Connect reports
+verified account access. Unsupported-schema diagnostics include filtered credential
+field names, types and counts only, with no response values.
