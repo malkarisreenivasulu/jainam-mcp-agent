@@ -48,3 +48,28 @@ malformed/duplicate callback fields, occupied ports, timeout cleanup, session-on
 persistence and accurate missing-credential diagnostics. These tests do not prove
 Jainam accepts the loopback redirect or that a real developer app can authorize.
 Verify a real login and `doctor --online` locally before relying on account reads.
+
+## v0.1.4 login exchange review
+
+The documented SSO sequence was compared with the MCP: appCode browser URL,
+callback userId/authCode, SHA-256 of userId + authCode + apiSecret, and vendor
+getUserDetails exchange. The saved Jainam vendor Postman collection sends a JSON
+body with checkSum alone; v0.1.4's login transport restricts the pinned SDK payload
+to that field. It does not transmit the raw Secret Key.
+
+An unauthenticated request using a synthetic invalid checksum observed HTTP 200
+with a normalized NotOk status and an empty result. No real credential was used,
+no session was issued, and this is not proof of the cause of a user's failure.
+Regression tests exercise this rejection through the actual installed SDK and
+requests preparation, verify the wire body, and ensure no credentials are saved
+or overwritten on failure. Missing/ambiguous session fields remain rejected.
+
+GitHub CI exposed a Windows socket-reuse difference in v0.1.3's occupied-port
+test. The callback listener now requests exclusive Windows binding, and the bind
+failure test injects a deterministic bind error. The real loopback round trip is
+retained separately.
+
+Production sign-in and account access remain unverified until a user completes
+setup and doctor --online successfully with their own Jainam app.
+
+Reference: https://protrade.jainam.in/open-apidocs/v2/index.html

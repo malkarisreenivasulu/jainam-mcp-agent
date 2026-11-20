@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.4
+
+- Match the saved Jainam vendor Postman checksum-only session-exchange request body.
+- Recognize HTTP-200 NotOk rejection before attempting session extraction; distinguish HTTP, network, non-JSON and unsupported-schema failures with value-free diagnostics.
+- Preserve existing saved credentials on all failed exchanges; keep unknown token fields untrusted.
+- Fix Windows callback socket exclusivity and deterministic occupied-port regression coverage.
+- Validate actual SDK wire requests with synthetic data; real account login remains unverified.
+
 ## 0.1.3
 
 - Add guided `setup` and automatic loopback callback capture for `login`; preserve external callbacks via `login --manual`.

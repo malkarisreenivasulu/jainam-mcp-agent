@@ -54,7 +54,7 @@ The MCP server reads data; your AI client renders charts if supported. Sector ch
 If you already have Python and Git, these commands install the tagged release in an isolated folder:
 
 ```sh
-git clone --branch v0.1.3 https://github.com/malkarisreenivasulu/jainam-mcp-agent.git
+git clone --branch v0.1.4 https://github.com/malkarisreenivasulu/jainam-mcp-agent.git
 cd jainam-mcp-agent
 python3 -m venv .venv
 # macOS/Linux:

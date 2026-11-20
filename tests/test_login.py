@@ -18,16 +18,11 @@ def test_callback_decodes_values():
 
 
 def test_bind_failure_does_not_open_browser(monkeypatch):
-    import socket
-
     browser = Mock()
     monkeypatch.setattr(login.webbrowser, "open", browser)
-    with socket.socket() as occupied:
-        occupied.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        occupied.bind(("127.0.0.1", 8765))
-        occupied.listen()
-        with pytest.raises(ConfigError, match="port 8765"):
-            login.capture_callback("https://example.com")
+    monkeypatch.setattr(login.CallbackServer, "server_bind", Mock(side_effect=OSError()))
+    with pytest.raises(ConfigError, match="port 8765"):
+        login.capture_callback("https://example.com", timeout=0)
     browser.assert_not_called()
 
 

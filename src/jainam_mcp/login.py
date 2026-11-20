@@ -1,5 +1,7 @@
 """Bounded loopback callback capture. Broker secrets never enter request logs."""
 
+import os
+import socket
 import time
 import webbrowser
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -27,6 +29,21 @@ def callback_values(target):
     return tuple(values)
 
 
+class CallbackServer(HTTPServer):
+    # Windows SO_REUSEADDR permits a second listener on an occupied port.
+    allow_reuse_address = os.name != "nt"
+
+    def server_bind(self):
+        if os.name == "nt":
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        super().server_bind()
+
+    def get_request(self):
+        connection, address = super().get_request()
+        connection.settimeout(2)
+        return connection, address
+
+
 def capture_callback(login_url, timeout=180):
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *args):
@@ -44,12 +61,6 @@ def capture_callback(login_url, timeout=180):
             self.end_headers()
             self.wfile.write(b"Return to Terminal to finish login. You may close this tab."
                              if values and valid_host else b"Invalid callback. Continue Jainam sign-in.")
-
-    class CallbackServer(HTTPServer):
-        def get_request(self):
-            connection, address = super().get_request()
-            connection.settimeout(2)
-            return connection, address
 
     try:
         server = CallbackServer(("127.0.0.1", 8765), Handler)

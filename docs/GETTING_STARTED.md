@@ -21,7 +21,7 @@ If `python` is not found on macOS/Linux, try `python3`. On Windows try `py -3`. 
 ## 2. Download the released source
 
 ```sh
-git clone --branch v0.1.3 https://github.com/malkarisreenivasulu/jainam-mcp-agent.git
+git clone --branch v0.1.4 https://github.com/malkarisreenivasulu/jainam-mcp-agent.git
 cd jainam-mcp-agent
 ```
 
@@ -112,7 +112,7 @@ Keep your private credentials file; do not delete or publish it. From your clone
 
 ```sh
 git fetch origin --tags
-git switch --detach v0.1.3
+git switch --detach v0.1.4
 python -m pip install .
 python -m jainam_mcp setup
 python -m jainam_mcp doctor --online
