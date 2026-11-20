@@ -52,6 +52,8 @@ Fill the remaining required contact/app fields in Jainam's portal. The MCP canno
 
 ## 3. Enter app details once and sign in
 
+Enter the values in the **Terminal/command window opened by Connect**, not in Claude or a configuration file. If it is closed, double-click Connect.command (Mac) or Connect.bat (Windows) again. At each prompt paste only the requested value and press Enter. After completing browser login, enter no further command: Connect receives the redirect and checks the session automatically. Wait for Connected.
+
 1. Open Connect. On first use, enter APP Code and Secret Key in its hidden prompts. Nothing appearing as you type/paste is normal; press Enter after each value.
 2. Complete Jainam's login/MFA in the browser on **the same computer**, within three minutes. Keep the Connect window open. Do not press Ctrl+Z, which suspends the command; Ctrl+C cancels.
 3. Jainam redirects back automatically. Do not copy the callback URL into Terminal or chat.

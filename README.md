@@ -84,10 +84,14 @@ The Connect launcher prepares the project automatically. The first run may take 
 
 ### Step 4 — Enter your app details and finish browser login
 
-1. At **APP Code (hidden)**, paste your own APP Code and press Enter.
-2. At **Secret Key (hidden)**, paste that app's Secret Key and press Enter. **You will not see characters while entering these values; that is normal.**
+**Where do I enter these values?** In the **Terminal/command window opened by Connect in Step 3**. Do not enter them in Claude, the browser address bar, or a configuration file.
+
+If that window is not open, go to the downloaded `jainam-mcp-agent` folder and double-click **Connect.command** on Mac or **Connect.bat** on Windows. Wait for installation to finish and the prompts below to appear.
+
+1. When the Connect window displays **`APP Code (hidden):`**, click in that window, paste **only your APP Code**, and press Enter. Do not type `APP Code` or a Python command.
+2. When it displays **`Secret Key (hidden):`**, paste **only that app's Secret Key** and press Enter. **No characters, dots or stars appear while you type/paste; that is normal.**
 3. Jainam opens in your browser. Finish its login/MFA on this same computer within three minutes. Keep the Connect window open.
-4. Return to the Connect window. Wait for:
+4. Return to the Connect window. **Do not enter another command or paste the callback URL.** Connect receives the browser redirect and checks the session automatically. Simply wait for this message:
 
    ```text
    Connected. You can now ask your MCP client for your Jainam account data.
