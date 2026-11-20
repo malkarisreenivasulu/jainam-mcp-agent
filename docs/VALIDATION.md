@@ -85,3 +85,12 @@ and avoiding login after installation failure. No real broker credentials are
 used by these tests. Actual user login remains unresolved until Connect reports
 verified account access. Unsupported-schema diagnostics include filtered credential
 field names, types and counts only, with no response values.
+
+## User-reported v0.1.5 connection
+
+A supplied terminal transcript reached the launcher's Connected message after
+browser authorization. In this version that message follows a successful
+read-only funds verification. This is evidence for that account/session flow,
+not a maintainer-run production test or proof for all accounts. No credentials,
+account identifiers, callback values or personal client configuration from the
+transcript are included here. Claude UI integration remains a separate user step.

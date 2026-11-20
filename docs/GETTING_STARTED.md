@@ -1,167 +1,121 @@
-# Set up Jainam MCP Agent on your computer
+# Start using Jainam MCP
 
-You do not need to be a programmer. Do each step in order. Never paste your API secret, session or authorization code into an AI conversation, GitHub issue or screenshot.
+**Download → open Connect → sign in once → add Jainam to your AI client → ask.**
 
-## 1. What you need
+You need your own Jainam ProTrade account with developer/API access. This project uses ProTrade Open API v2, not XTS credentials. Each person configures their own app. Never share APP Code, Secret Key, session, or callback URL in chats, screenshots or GitHub.
 
-- A Jainam account with access to [ProTrade developer applications](https://protrade.jainam.in/developers). Check API eligibility and charges directly with Jainam.
-- Python 3.11, 3.12, 3.13 or 3.14 from [python.org](https://www.python.org/downloads/). On Windows select **Add Python to PATH**.
-- [Git](https://git-scm.com/downloads), including on Windows: installation fetches the pinned SDK from GitHub.
-- Claude Desktop or VS Code with an MCP-capable Copilot setup. ChatGPT has additional tunnel/workspace requirements explained separately.
+## 1. Download once
 
-Verify in Terminal (macOS/Linux) or PowerShell (Windows):
+Install [Python 3.11–3.14](https://www.python.org/downloads/) and [Git](https://git-scm.com/downloads). On Windows select **Add Python to PATH**. Download the source from the [v0.1.5 release](https://github.com/malkarisreenivasulu/jainam-mcp-agent/releases/tag/v0.1.5), or use Git:
 
-```sh
-python --version
-git --version
-```
-
-If `python` is not found on macOS/Linux, try `python3`. On Windows try `py -3`. Use the same Python throughout. Stop if it is older than 3.11.
-
-## 2. Download the released source
+**macOS — Terminal:**
 
 ```sh
+cd ~
 git clone --branch v0.1.5 https://github.com/malkarisreenivasulu/jainam-mcp-agent.git
 cd jainam-mcp-agent
+open Connect.command
 ```
 
-A detached-HEAD message from cloning a release tag is normal. You are using a fixed release rather than a moving development branch.
-
-## 3. Install in its own environment
-
-macOS/Linux:
-
-```sh
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install .
-```
-
-Windows PowerShell (activation is not necessary):
+**Windows — PowerShell:**
 
 ```powershell
-py -3 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install .
+cd $HOME
+git clone --branch v0.1.5 https://github.com/malkarisreenivasulu/jainam-mcp-agent.git
+cd jainam-mcp-agent
+.\Connect.bat
 ```
 
-For subsequent Windows commands in this guide, use `.\.venv\Scripts\python.exe` wherever you see `python`. This also avoids PowerShell script-execution-policy issues. Never install this using `sudo pip`.
+The launcher installs this project into its own `.venv` if needed. No separate pip commands or environment activation are needed. Initial installation needs internet access. If you downloaded a ZIP, extract it first and open the launcher inside the extracted folder; its folder name may differ from the Git example.
 
-The installation downloads the MCP SDK and the maintainer's public Jainam Python SDK, pinned to the commit behind v0.1.1. Nothing is read from the maintainer's private computer or from your existing project `.env` files.
-
-## 4. Connect once, then ask
-
-For the normal local setup, double-click **Connect.command** on macOS or **Connect.bat** on Windows. Or run `python3 scripts/connect.py` (Windows: `py -3 scripts\connect.py`). The launcher prepares the environment if needed; you do not need to activate it or copy Python paths.
-
-On first use, enter your developer APP Code and Secret Key once. These are saved in a private **plaintext** `app_credentials.json` file outside the project, next to the separate session file. This enables renewal without asking for keys again. Anyone with access to that private file can read the app secret; this is not OS keychain encryption. No values are added to this repository, launch arguments, client JSON or GitHub. Authorization codes are never saved. `setup` is an alias for this one-time connection flow; advanced `login` remains a non-remembering forced sign-in method.
-
-**Every later use:** open Connect again, or ask through your configured local MCP client. Valid sessions are reused. Missing/expired sessions open browser sign-in using the remembered app; finish login and ask again. One login runs at a time within a server, and failures stop rather than opening repeated tabs. No terminal input or long-running wait is added to MCP calls. Updated sessions are picked up on the next read without restarting the server. Network/rate-limit/unknown broker errors do not automatically force login.
-
-Use `python3 scripts/connect.py --replace-app` after regenerating the Secret Key or switching developer apps. The same flags are available through `jainam-mcp connect` in the virtualenv. Headless/tunneled sessions and external callbacks may require `--manual` in a local interactive terminal. Only local loopback browser sign-in supports the automatic path. Existing JAINAM_USER_ID/JAINAM_USER_SESSION environment overrides must be cleared before file-based renewal.
-
-### Advanced: existing issued session
-
-
-```sh
-python -m jainam_mcp configure
-```
-
-At the hidden prompts enter your Jainam user ID and user session. Input is deliberately not echoed. Paste only the session value, not an entire response or callback URL. Credentials are saved outside this repository:
-
-- macOS/Linux: `~/.config/jainam-mcp/credentials.json`
-- Windows: `%APPDATA%\jainam-mcp\credentials.json` when APPDATA is available; otherwise `~/.config/jainam-mcp/credentials.json`.
-
-On POSIX the new file is mode `0600`. On Windows protect it with your user account's normal private file permissions; POSIX modes are not Windows ACL guarantees. This is plaintext local storage, not a vault or encryption. Prefer a non-synced private location. See [Security](../SECURITY.md).
-
-### Recommended: guided sign-in with your developer app
-
-**Set these fields while creating the app, before running `setup`:**
-
-| Jainam app field | Required action for this MCP |
-|---|---|
-| Redirect URL | Enter exactly `http://127.0.0.1:8765/callback`. This is the MCP default, not your APP Code. Click Save/Update. |
-| Postback URL | Leave blank if allowed. The package does not receive postbacks. If Jainam requires this field, ask Jainam for its supported configuration before proceeding. Do not use a dummy URL or `/callback` as an implemented postback endpoint. |
-
-The default is built into the MCP, but **registration in your Jainam app is manual and required**. The command cannot update your developer app settings. Do not substitute `localhost` in only one place: this listener uses the exact `127.0.0.1:8765` address. If Jainam rejects the loopback URL, use the manual method below with a real callback you control.
-
-1. Open the [Jainam developer portal](https://protrade.jainam.in/developers) and create or edit your own app. This release uses **ProTrade Open API v2**, not XTS API keys.
-2. Fill in the required developer contact/app fields. Set **Redirect URL** to exactly `http://127.0.0.1:8765/callback` and save. Postback URL is a separate broker setting; this package does not implement a postback receiver. Follow Jainam's requirements for that field rather than assuming the login callback handles it.
-3. Note the app's **APP Code** and **Secret Key**. APP Code identifies your developer app; your trading client ID is different. API eligibility and available app settings depend on Jainam.
-4. In the activated environment run:
-
-   ```sh
-   python -m jainam_mcp connect
-   ```
-
-5. Enter APP Code, then Secret Key at the hidden prompts. Nothing appearing while you type or paste is normal. Press Enter after each value. Do not press Ctrl+Z: that suspends the command instead of completing it. Ctrl+C cancels.
-6. Complete Jainam login/MFA in the browser on **the same computer** within three minutes. Jainam redirects to your registered URL. The local listener captures `userId` and `authCode`; you do not copy them. Return to Terminal for the saved-session confirmation. The app details are remembered privately for future sign-ins; auth codes are never saved.
-7. Wait for **Connected**: setup verifies one read-only funds request before reporting success. `doctor --online` remains available for diagnostics.
-8. Generate your client configuration below and restart your MCP client.
-
-The listener binds only to `127.0.0.1:8765`, starts before the browser opens, suppresses callback request logging, and closes after capture, cancellation or timeout. Never expose this port publicly. It expects GET callback query parameters named `userId` and `authCode`. This is broker SSO, not MCP OAuth. No broker password is collected by the package. No undocumented state parameter is added; the broker callback is not claimed to have cryptographic state correlation. The broker session exchange validates the authorization code with your app secret.
-
-**Important limitation:** automated tests use synthetic callbacks, not real Jainam accounts. Loopback Redirect URL acceptance, actual callback fields, MFA and API entitlement must be verified with your own app. This update does not claim a successful production login for every account.
-
-### Existing external callback or loopback URL rejected
-
-If Jainam refuses a loopback redirect, or you already have a reachable callback you control, retain that registered URL and run:
-
-```sh
-python -m jainam_mcp login --manual
-```
-
-Enter APP Code and Secret Key, complete browser sign-in, then enter the `userId` and fresh `authCode` received by your callback at the hidden terminal prompts. The package cannot receive a callback sent to an arbitrary website. Do not use someone else's callback URL. Expired or already-used codes require a new login. If your broker response has no unique `userSession`, login stops without printing its payload.
-
-If port 8765 is occupied, close the other app or use the manual method. Remote SSH/headless setup should use a callback you control and the manual method; localhost in a remote browser is not necessarily the machine running Python.
-
-### Upgrading an existing clone
-
-Keep your private credentials file; do not delete or publish it. From your clone:
+**Already have the project? Do not clone again.** Update that folder:
 
 ```sh
 git fetch origin --tags
 git switch --detach v0.1.5
-python -m pip install .
-python -m jainam_mcp connect
-python -m jainam_mcp doctor --online
 ```
 
-The updated local MCP reloads renewed session files automatically. If the existing clone is elsewhere, use its activated environment. Only run commands for your operating system; Windows `py` and `Scripts\python.exe` commands do not work in macOS zsh.
+Then open **Connect.command** on macOS or **Connect.bat** on Windows. A detached-HEAD message is normal when using a release tag. `destination path already exists` means the folder already exists, not that Jainam rejected your login.
 
-### Advanced: environment variables
+## 2. Create your Jainam developer app
 
-If both `JAINAM_USER_ID` and `JAINAM_USER_SESSION` are present, they override the file. A partial pair fails explicitly; it will not combine one account's ID with another session. Use your local secret manager to set them. The server never auto-loads `.env`, and examples deliberately contain no secret values. Clear old variables if changing back to file configuration.
+Before entering app details in Connect, open [Jainam Developers](https://protrade.jainam.in/developers), create/edit your own app, and set:
 
-## 5. Check setup
+| Field | What to enter |
+|---|---|
+| Redirect URL | **`http://127.0.0.1:8765/callback`** — exactly this URL, then Save/Update |
+| Postback URL | Leave blank if permitted. If mandatory, confirm Jainam's supported configuration with Jainam. This MCP does not receive postbacks; do not use a dummy URL or assume `/callback` handles them. |
+| APP Code | Copy the value Jainam gives your developer app; this is different from your trading client ID. |
+| Secret Key | Use the Secret Key belonging to that same developer app. |
+
+Fill the remaining required contact/app fields in Jainam's portal. The MCP cannot register/update the app for you. `127.0.0.1` refers to your own computer; use the exact URL consistently rather than substituting `localhost` in one place. If Jainam refuses this URL, use the external-callback option below.
+
+## 3. Enter app details once and sign in
+
+1. Open Connect. On first use, enter APP Code and Secret Key in its hidden prompts. Nothing appearing as you type/paste is normal; press Enter after each value.
+2. Complete Jainam's login/MFA in the browser on **the same computer**, within three minutes. Keep the Connect window open. Do not press Ctrl+Z, which suspends the command; Ctrl+C cancels.
+3. Jainam redirects back automatically. Do not copy the callback URL into Terminal or chat.
+4. Wait for **Connected**. Connect reports that only after a read-only funds check succeeds. `[Process completed]` afterward is normal; the sign-in launcher has finished.
+
+The app details are remembered in a private **plaintext** `app_credentials.json` outside the repository. The issued session is stored separately. POSIX files use mode 0600; Windows relies on private account ACLs. This is not OS-keychain encryption. Authorization codes are never saved. Nothing is added to your project, Claude JSON or GitHub. See [Security](../SECURITY.md).
+
+If login fails, keep the error code and safe response shape only. A browser redirect alone is not proof of a usable session. See [Troubleshooting](TROUBLESHOOTING.md).
+
+## 4. Add Jainam to your AI client once
+
+| Client | Next step |
+|---|---|
+| Claude Desktop | [Generate your actual Python path and add the Jainam entry](CLAUDE.md) |
+| VS Code Copilot | [Generate the VS Code configuration](VSCODE.md) |
+| ChatGPT | [Separate tunnel and workspace requirements](CHATGPT.md) — desktop JSON does not connect ChatGPT |
+
+For Claude, the usual macOS command from the project folder is:
 
 ```sh
-python -m jainam_mcp doctor
+.venv/bin/python -m jainam_mcp client-config claude
 ```
 
-Expected: `credentials_configured: true`, `connection_tested: false`. This proves configuration can load, **not** that Jainam accepts the session.
+On Windows use:
 
-Optionally verify the session using one read-only funds request:
-
-```sh
-python -m jainam_mcp doctor --online
+```powershell
+.\.venv\Scripts\python.exe -m jainam_mcp client-config claude
 ```
 
-Expected: `online_ok: true`. The diagnostic does not print funds, session tokens, account IDs or broker error bodies. If it fails, use [Troubleshooting](TROUBLESHOOTING.md).
+Copy the generated entry, never a placeholder `/absolute/path/...`. Keep other MCP servers and application preferences. Restart the AI client once after adding the server.
 
-## 6. Connect your AI client
+## 5. Everyday use: just ask
 
-Choose [Claude](CLAUDE.md), [VS Code](VSCODE.md), or [ChatGPT](CHATGPT.md). Run the client-config command with **this environment's Python** so it generates the right absolute path.
+> Show my Jainam holdings in a table.
 
-## 7. First requests
+> Use Jainam to show my available funds.
 
-- “Use jainam_status to check configuration.”
-- “Using Jainam tools, summarize my holdings. Do not make recommendations.”
-- “Show my existing positions and explain the returned fields.”
-- “Search MCX contracts containing GOLD, limit 5.”
+The client launches the local MCP. A valid session is reused. If a local read finds a missing/expired session, remembered app details let it open browser sign-in. Finish login and ask again. You do not re-enter app keys, edit client JSON, or restart the MCP for normal renewal. Network/rate-limit errors do not force login; failed sign-ins do not open repeated browser tabs. Open Connect to retry if needed.
 
-If you run `serve` yourself, a quiet terminal is normal: it waits for MCP protocol messages from a client. Do not type secrets into it. Ctrl+C stops it.
+The tools read account information. They do not place, modify, cancel or close orders/positions. Requested account data is sent to your chosen AI client/provider. Chart rendering depends on that client.
 
-## Renew a session / remove the project
+## Advanced options
 
-When the broker expires a session, a local read can open browser renewal using remembered app details. Finish browser sign-in and ask again, or open Connect yourself. The server reloads renewed files. Expiry is controlled by Jainam.
+From the project folder use `.venv/bin/python -m jainam_mcp` on macOS or `.\.venv\Scripts\python.exe -m jainam_mcp` on Windows, followed by:
 
-To remove it, delete the client's `jainam` entry and the local credentials file, revoke the session/app at Jainam where available, delete the private app_credentials.json as well, then delete the project folder. Uninstalling the Python package alone does not revoke a broker session.
+| Command | When to use it |
+|---|---|
+| `connect` | The same check/connect flow used by the launcher; `setup` is an alias |
+| `connect --replace-app` | Replace remembered app details after key rotation or app changes |
+| `connect --manual` | Keep an external callback you control; manually enter its userId/authCode after browser login |
+| `configure` | You already have an issued user session; this does not exchange developer keys |
+| `login` | Force sign-in without remembering developer app details |
+| `doctor` | Offline saved-session check; it does not prove broker access |
+| `doctor --online` | Diagnostic read-only funds request without printing balances or credentials |
+| `client-config claude` / `client-config vscode` | Generate credential-free client JSON with the current Python path |
+
+`python3 scripts/connect.py` (Windows: `py -3 scripts\connect.py`) is the Terminal equivalent of the launcher. Append `--replace-app` or `--manual` there if needed.
+
+Automatic browser renewal is for local loopback callbacks on the same computer. Remote/headless/tunneled setups and external callbacks may need manual login. A saved external-callback profile does not launch the loopback listener automatically. Multiple client processes may compete for port 8765; finish one login and ask again in the others.
+
+Session location: macOS/Linux `~/.config/jainam-mcp/credentials.json`; Windows `%APPDATA%\jainam-mcp\credentials.json` when APPDATA is available. App settings live beside it. A custom path is selected with `--config` **before** the subcommand. Complete JAINAM_USER_ID/JAINAM_USER_SESSION environment variables override the file; clear stale overrides before browser renewal. `.env` files are not auto-loaded.
+
+To remove: delete the AI client's Jainam entry, revoke app/session access with Jainam where available, remove both private app and session files, then delete the project. Uninstalling alone does not revoke access.
+
+## What has been checked
+
+The v0.1.5 tests cover installation, MCP tools, callback mechanics, session validation and renewal. A user-supplied v0.1.5 terminal transcript reported **Connected**, which follows a successful read-only funds check. This is one observed account flow, not proof of universal Jainam access or verified Claude/ChatGPT UI integration. See [Validation](VALIDATION.md) for limits.

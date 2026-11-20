@@ -5,8 +5,10 @@ Complete [Getting started](GETTING_STARTED.md). Use a current VS Code version an
 1. Run this with the installed environment's Python:
 
    ```sh
-   python -m jainam_mcp client-config vscode
+   .venv/bin/python -m jainam_mcp client-config vscode
    ```
+
+On Windows run `.\.venv\Scripts\python.exe -m jainam_mcp client-config vscode` instead. No activation is needed. Use the generated absolute path, not `/absolute/path/...` from the example.
 
 2. Open **MCP: Open User Configuration** from the Command Palette, or create `.vscode/mcp.json` for a workspace. Merge the generated `jainam` entry under `servers`, preserving existing entries.
 3. Review and trust the launch command when VS Code asks. Start the server using **MCP: List Servers**.
@@ -28,6 +30,6 @@ Example structure:
 
 Use generated paths on Windows. Do not put secrets in a committed workspace file. User-level configuration and a credentials file outside your repository avoid accidental sharing. Remote SSH, containers and WSL launch servers in their own environment; install/configure there if that is where Copilot runs the command.
 
-Renewing credentials requires an MCP server restart. Use VS Code's MCP output logs for launch errors, but redact any private data before sharing them.
+With v0.1.5, renewed session files are reloaded on the next read; normal renewal does not require a server restart. Use VS Code's MCP output logs for launch errors, but redact any private data before sharing them.
 
 Sources: [official add/use guide](https://code.visualstudio.com/docs/agent-customization/mcp-servers), [configuration reference](https://code.visualstudio.com/docs/reference/mcp-configuration). Account access and UI names may change. The generated JSON is tested; real-client acceptance is a user-side check.

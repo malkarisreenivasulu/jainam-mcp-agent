@@ -17,24 +17,6 @@ Connect Claude Desktop, VS Code Copilot, or a supported ChatGPT tunnel to **your
 
 **No order placement, modification, cancellation, square-off, autonomous trading, or generic HTTP tool.** No subscription, multicast server, Redis, Docker, or KuberaOS installation is needed. Live streaming and live quotes are not exposed. Five reusable MCP prompt templates help clients structure analysis.
 
-## Copy a prompt. See your portfolio clearly.
-
-After connecting your client, try:
-
-> **Sector-wise donut:** “Show my holdings by sector as a donut chart, weighted by current market value. Use only sourced sector classifications, keep unmapped stocks as Unclassified, and show INR values, percentages and data coverage.”
-
-> **Investment-wise pie:** “Show my stock-wise invested capital as a pie chart using acquisition cost. Show the top 8 stocks plus Other, total invested capital and an underlying table. Do not substitute market value for invested cost.”
-
-> **Holdings dashboard:** “Create KPI cards for invested capital, market value and unrealized P&L, a stock-allocation donut, signed P&L bars and a holdings table. Label missing data and snapshot time.”
-
-> **Positions:** “Show my existing positions as a signed unrealized-P&L bar chart. Separate realized and unrealized P&L, and verify contract units before calculating futures or options exposure.”
-
-> **Trades:** “Show traded turnover by symbol as a donut and fill counts by hour as bars. Count fills, orders and completed round trips separately. Do not treat turnover as profit.”
-
-**[Open the full visual prompt library →](docs/EXAMPLE_PROMPTS.md)** for copy-and-paste prompts, sector/cost/market-value comparisons, treemaps, reconciliation and private HTML reports.
-
-The MCP server reads data; your AI client renders charts if supported. Sector charts require returned classifications or a sourced mapping you provide. Charts cannot establish missing realized P&L, charges or contract multipliers.
-
 ## Start here
 
 1. Install Python 3.11–3.14 and Git once. Clone/download this repository, or update your existing clone to v0.1.5. **Do not clone again into a folder that already exists.**
@@ -54,16 +36,49 @@ On Windows use `py -3 scripts\connect.py`. Existing virtualenv users can run `ja
 
 [Full step-by-step guide](docs/GETTING_STARTED.md) · [Troubleshooting](docs/TROUBLESHOOTING.md)
 
-Real broker authorization/entitlement still needs verification with your own app. Tests alone do not establish production login. If setup reports an unsupported response, share only its safe diagnostic, never keys or callback URLs.
+A user-reported v0.1.5 login reached verified Connected. Each user still needs their own API entitlement and successful login; this does not establish universal access. If setup reports an unsupported response, share only its safe diagnostic, never keys or callback URLs.
 
-Generate your client configuration rather than editing Python paths by hand:
+### Connect Claude Desktop once
+
+After Connect says **Connected**, generate the configuration from your project folder:
+
+**macOS:**
 
 ```sh
-python -m jainam_mcp client-config claude
-python -m jainam_mcp client-config vscode
+.venv/bin/python -m jainam_mcp client-config claude
 ```
 
-The output contains a local executable path and launch arguments, **not credentials**. Merge it into your client's configuration using its guide. ChatGPT does not use this desktop JSON; follow its separate tunnel guide.
+**Windows PowerShell:**
+
+```powershell
+.\.venv\Scripts\python.exe -m jainam_mcp client-config claude
+```
+
+This prints **your real absolute Python path**. In Claude Desktop open **Settings → Developer → Edit Config**. If the file is empty, paste the generated JSON. If it already has servers, add only the generated `jainam` entry inside its existing `mcpServers` object. Keep other servers and preferences. Save, fully quit Claude and reopen it once.
+
+**Never paste `/absolute/path/...` from an example as your command. Never paste APP Code, Secret Key or session into the client JSON.** This is a Python MCP, not an npm package launched with `npx`.
+
+Then ask: **“Use Jainam to show my available funds.”** `[Process completed]` in the sign-in window is normal; Claude launches the server itself.
+
+[Claude walkthrough](docs/CLAUDE.md) · [VS Code](docs/VSCODE.md) · [ChatGPT's separate requirements](docs/CHATGPT.md)
+
+## Copy a prompt. See your portfolio clearly.
+
+After connecting your client, try:
+
+> **Sector-wise donut:** “Show my holdings by sector as a donut chart, weighted by current market value. Use only sourced sector classifications, keep unmapped stocks as Unclassified, and show INR values, percentages and data coverage.”
+
+> **Investment-wise pie:** “Show my stock-wise invested capital as a pie chart using acquisition cost. Show the top 8 stocks plus Other, total invested capital and an underlying table. Do not substitute market value for invested cost.”
+
+> **Holdings dashboard:** “Create KPI cards for invested capital, market value and unrealized P&L, a stock-allocation donut, signed P&L bars and a holdings table. Label missing data and snapshot time.”
+
+> **Positions:** “Show my existing positions as a signed unrealized-P&L bar chart. Separate realized and unrealized P&L, and verify contract units before calculating futures or options exposure.”
+
+> **Trades:** “Show traded turnover by symbol as a donut and fill counts by hour as bars. Count fills, orders and completed round trips separately. Do not treat turnover as profit.”
+
+**[Open the full visual prompt library →](docs/EXAMPLE_PROMPTS.md)** for copy-and-paste prompts, sector/cost/market-value comparisons, treemaps, reconciliation and private HTML reports.
+
+The MCP server reads data; your AI client renders charts if supported. Sector charts require returned classifications or a sourced mapping you provide. Charts cannot establish missing realized P&L, charges or contract multipliers.
 
 ## Verification before you use real account data
 
