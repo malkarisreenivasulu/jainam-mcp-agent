@@ -45,18 +45,18 @@ The MCP server reads data; your AI client renders charts if supported. Sector ch
 If you already have Python and Git, these commands install the tagged release in an isolated folder:
 
 ```sh
-git clone --branch v0.1.2 https://github.com/malkarisreenivasulu/jainam-mcp-agent.git
+git clone --branch v0.1.3 https://github.com/malkarisreenivasulu/jainam-mcp-agent.git
 cd jainam-mcp-agent
 python3 -m venv .venv
 # macOS/Linux:
 source .venv/bin/activate
 # Windows PowerShell instead: .venv\Scripts\Activate.ps1
 python -m pip install .
-python -m jainam_mcp configure
+python -m jainam_mcp setup
 python -m jainam_mcp doctor
 ```
 
-`configure` asks for your user ID and existing user session **in hidden terminal prompts**. If you only have developer keys, use the documented [browser authorization flow](docs/GETTING_STARTED.md#sign-in-with-your-own-developer-app). An app key alone is not an authenticated session.
+`setup` asks for your developer **APP Code** and **Secret Key** using hidden prompts, opens Jainam sign-in, and captures the callback locally. First register **`http://127.0.0.1:8765/callback`** as your app's Redirect URL in Jainam. Your client ID alone is insufficient. If Jainam does not accept a loopback URL, use `login --manual` with a callback you control. `configure` is only for an already-issued user session. See the [step-by-step guide](docs/GETTING_STARTED.md).
 
 Generate your client configuration rather than editing Python paths by hand:
 

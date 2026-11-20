@@ -5,7 +5,7 @@
 This project is distributed as source. It contains **no maintainer broker credentials**, personal token caches, account exports or private KuberaOS files. Each user supplies their own credentials locally.
 
 - No credentials are passed as MCP tool arguments or returned by the configuration-status tool.
-- `configure` and `login` use hidden terminal input, not command-line secret arguments. They must be run by a human in a trusted local terminal.
+- `setup`, `configure` and `login` use hidden terminal input, not command-line secret arguments. They must be run by a human in a trusted local terminal.
 - The saved session is plaintext outside the checkout: POSIX file mode 0600, with a newly created final directory mode 0700. On Windows use private account ACLs; POSIX modes do not establish equivalent ACL guarantees.
 - `login` keeps app secrets/auth codes in process memory only; only user ID/session are persisted. Python cannot promise immediate memory zeroization.
 - Environment variables override the file only when the complete pair is provided. This server does not discover `.env` or arbitrary token files.
@@ -31,3 +31,13 @@ https://github.com/malkarisreenivasulu/jainam-mcp-agent/security/advisories/new
 Do not disclose credentials in public issues. If a credential leaks, revoke/rotate it with Jainam immediately; deleting a Git commit is not enough. For a non-sensitive bug use the issue tracker with sanitized error codes.
 
 Version 0.1.x is the currently maintained series. No guaranteed response SLA is offered.
+
+## Local sign-in callback
+
+`setup` / `login` temporarily listen on IPv4 loopback port 8765 for a GET callback
+at `/callback`. The listener is separate from the stdio MCP transport, closes on
+completion/cancellation/timeout, and never logs callback queries. It does not use
+an undocumented OAuth state parameter: no cryptographic callback correlation is
+claimed. Use a trusted local machine and your own registered developer app. The
+authorization code is exchanged using that app's secret; the secret/code are not
+persisted. Use `login --manual` for a callback you already control.

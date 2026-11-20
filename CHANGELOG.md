@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.3
+
+- Add guided `setup` and automatic loopback callback capture for `login`; preserve external callbacks via `login --manual`.
+- Ask for APP Code and Secret Key before browser authorization; retain private session-only storage.
+- Correct missing-credential online diagnostics and expand platform-specific onboarding/troubleshooting.
+- Real broker loopback acceptance remains unverified; manual callback fallback documented.
+
 ## 0.1.2 — 2026-11-12
 
 - Reject HTML, empty and unusable contract-master responses instead of reporting misleading empty matches.

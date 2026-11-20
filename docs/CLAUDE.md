@@ -34,6 +34,6 @@ For a custom local credential location, generate the entry using:
 python -m jainam_mcp --config /absolute/private/credentials.json client-config claude
 ```
 
-A success response with `credentials_configured: false` means the server launches but needs `configure`. Restart the server after changing a session. Claude may receive requested holdings, balances and trades; read its data-use settings.
+A success response with `credentials_configured: false` means the server launches but needs `setup` (or `configure` for an existing session). Restart the server after changing a session. Claude may receive requested holdings, balances and trades; read its data-use settings.
 
 Source: [MCP's official local-server guide](https://modelcontextprotocol.io/docs/develop/connect-local-servers). Client menus can change. This project has protocol-level tests; configuring a real Claude account is a user-side step.

@@ -38,3 +38,13 @@ The first checks local configuration. The second attempts a real, read-only fund
 In your client, try `jainam_status`, one funds/holdings read, one small instrument search and one historical request using a verified token. Check the response's `ok` field; successful MCP transport does not mean the broker accepted a request. Compare returned quantities, units and totals with your broker account before using any analysis.
 
 Claude Desktop/VS Code UI discovery, ChatGPT tunnel/account permissions, real SSO callbacks, session lifetime and client chart rendering are not automated end-to-end here. Follow the client guides and the broker's current documentation. If a contract request returns a broker error, do not treat it as “no such stock” or invent an instrument ID.
+
+## v0.1.3 guided setup validation
+
+Guided setup and manual exchange use synthetic credentials. A real loopback HTTP
+round trip tests callback capture, rejection of unrelated requests, no-store
+responses and absence of authorization codes from request logs. Tests also cover
+malformed/duplicate callback fields, occupied ports, timeout cleanup, session-only
+persistence and accurate missing-credential diagnostics. These tests do not prove
+Jainam accepts the loopback redirect or that a real developer app can authorize.
+Verify a real login and `doctor --online` locally before relying on account reads.

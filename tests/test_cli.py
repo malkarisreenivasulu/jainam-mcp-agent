@@ -63,14 +63,14 @@ def test_unknown_or_ambiguous_login_shape_fails(data):
 
 
 def test_login_never_saves_secret_or_auth_code(tmp_path, monkeypatch, capsys):
-    answers = iter(["synthetic-app", "synthetic-user", "synthetic-auth-code", "synthetic-api-secret"])
+    answers = iter(["synthetic-app", "synthetic-api-secret", "synthetic-user", "synthetic-auth-code"])
     monkeypatch.setattr(cli.getpass, "getpass", lambda *a: next(answers))
     monkeypatch.setattr(cli.webbrowser, "open", lambda url: True)
     client = Mock()
     client.exchange_auth_code.return_value = {"data": {"userSession": "synthetic-session-not-real"}}
     monkeypatch.setattr(cli, "Client", lambda **kw: client)
     path = tmp_path / "credentials.json"
-    assert cli.main(["--config", str(path), "login"]) == 0
+    assert cli.main(["--config", str(path), "login", "--manual"]) == 0
     saved = path.read_text()
     assert "synthetic-api-secret" not in saved and "synthetic-auth-code" not in saved
     assert "synthetic-session-not-real" not in capsys.readouterr().out
@@ -80,14 +80,14 @@ def test_login_never_saves_secret_or_auth_code(tmp_path, monkeypatch, capsys):
 
 
 def test_login_errors_do_not_echo_broker_payload(tmp_path, monkeypatch, capsys):
-    answers = iter(["synthetic-app", "synthetic-user", "synthetic-auth-code", "synthetic-api-secret"])
+    answers = iter(["synthetic-app", "synthetic-api-secret", "synthetic-user", "synthetic-auth-code"])
     monkeypatch.setattr(cli.getpass, "getpass", lambda *a: next(answers))
     monkeypatch.setattr(cli.webbrowser, "open", lambda url: True)
     client = Mock()
     client.exchange_auth_code.side_effect = RuntimeError("synthetic-api-secret")
     monkeypatch.setattr(cli, "Client", lambda **kw: client)
     path = tmp_path / "credentials.json"
-    assert cli.main(["--config", str(path), "login"]) == 1
+    assert cli.main(["--config", str(path), "login", "--manual"]) == 1
     assert not path.exists()
     output = capsys.readouterr()
     assert "synthetic-api-secret" not in output.out + output.err
@@ -125,3 +125,24 @@ def test_online_doctor_marks_connection_attempt_without_financial_output(tmp_pat
     assert report["connection_tested"] is True
     assert report["online_ok"] is True
     assert "12345" not in str(report)
+
+
+def test_setup_automatic_callback(tmp_path, monkeypatch, capsys):
+    answers = iter(["synthetic-app", "synthetic-secret"])
+    monkeypatch.setattr(cli.getpass, "getpass", lambda *a: next(answers))
+    monkeypatch.setattr(cli, "capture_callback", lambda url: ("synthetic-user", "synthetic-code"))
+    client = Mock()
+    client.exchange_auth_code.return_value = {"userSession": "synthetic-session"}
+    monkeypatch.setattr(cli, "Client", lambda **kw: client)
+    path = tmp_path / "credentials.json"
+    assert cli.main(["--config", str(path), "setup"]) == 0
+    assert load(path).user_id == "synthetic-user"
+    assert "synthetic-secret" not in path.read_text() + capsys.readouterr().out
+    client.exchange_auth_code.assert_called_once_with("synthetic-user", "synthetic-code", "synthetic-secret")
+
+
+def test_online_missing_credentials_does_not_claim_connection(tmp_path, capsys):
+    assert cli.main(["--config", str(tmp_path / "missing"), "doctor", "--online"]) == 1
+    report = json.loads(capsys.readouterr().out)
+    assert report["connection_tested"] is False
+    assert report["error"] == "NOT_CONFIGURED"

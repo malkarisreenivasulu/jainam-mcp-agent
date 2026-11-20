@@ -119,7 +119,10 @@ class Service:
 
     def _run(self, operation: Callable) -> dict:
         if not self.credentials:
-            return {"ok": False, "error": "NOT_CONFIGURED", "message": "Run jainam-mcp configure locally."}
+            return {
+                "ok": False, "error": "NOT_CONFIGURED",
+                "message": "Run python -m jainam_mcp setup locally (configure only for an existing session).",
+            }
         transport = ReadOnlySession()
         try:
             client = self.client_factory(

@@ -21,7 +21,7 @@ If `python` is not found on macOS/Linux, try `python3`. On Windows try `py -3`. 
 ## 2. Download the released source
 
 ```sh
-git clone --branch v0.1.2 https://github.com/malkarisreenivasulu/jainam-mcp-agent.git
+git clone --branch v0.1.3 https://github.com/malkarisreenivasulu/jainam-mcp-agent.git
 cd jainam-mcp-agent
 ```
 
@@ -65,21 +65,51 @@ At the hidden prompts enter your Jainam user ID and user session. Input is delib
 
 On POSIX the new file is mode `0600`. On Windows protect it with your user account's normal private file permissions; POSIX modes are not Windows ACL guarantees. This is plaintext local storage, not a vault or encryption. Prefer a non-synced private location. See [Security](../SECURITY.md).
 
-### Sign in with your own developer app
+### Recommended: guided sign-in with your developer app
 
-1. Sign in to the [Jainam developer portal](https://protrade.jainam.in/developers).
-2. Follow its application-creation flow, register a callback URL you control, and note your `appCode` and `apiSecret`. The package does not create an account or provision API access for you.
-3. Run:
+1. Open the [Jainam developer portal](https://protrade.jainam.in/developers) and create or edit your own app. This release uses **ProTrade Open API v2**, not XTS API keys.
+2. Fill in the required developer contact/app fields. Set **Redirect URL** to exactly `http://127.0.0.1:8765/callback` and save. Postback URL is a separate broker setting; this package does not implement a postback receiver. Follow Jainam's requirements for that field rather than assuming the login callback handles it.
+3. Note the app's **APP Code** and **Secret Key**. APP Code identifies your developer app; your trading client ID is different. API eligibility and available app settings depend on Jainam.
+4. In the activated environment run:
 
    ```sh
-   python -m jainam_mcp login
+   python -m jainam_mcp setup
    ```
 
-4. Enter your appCode at the hidden prompt. The command opens Jainam's sign-in page in your browser.
-5. Complete Jainam's own login. Observe your registered redirect/callback and obtain its `userId` and fresh `authCode`. Do not send these to another person or this project's maintainer.
-6. Return to Terminal. Enter userId, authCode and apiSecret at the hidden prompts. The command exchanges the code through the public Python SDK. It saves only userId and userSession, not the API secret or authorization code.
+5. Enter APP Code, then Secret Key at the hidden prompts. Nothing appearing while you type or paste is normal. Press Enter after each value. Do not press Ctrl+Z: that suspends the command instead of completing it. Ctrl+C cancels.
+6. Complete Jainam login/MFA in the browser on **the same computer** within three minutes. Jainam redirects to your registered URL. The local listener captures `userId` and `authCode`; you do not copy them. Return to Terminal for the saved-session confirmation. The Secret Key and auth code are not saved.
+7. Run `python -m jainam_mcp doctor --online`. Proceed only when `credentials_configured` and `online_ok` are true. A saved session alone does not prove broker access.
+8. Generate your client configuration below and restart your MCP client.
 
-The project does not run a callback web server, collect broker passwords, or bypass MFA. Your callback must already be reachable and under your control. If Jainam returns a different response shape without a unique `userSession`, the command stops without dumping the response; obtain your session through Jainam's documented flow and use `configure`. Expired/used codes require fresh authorization. See the [SDK guide](https://github.com/malkarisreenivasulu/jainam-api-python/blob/v0.1.1/docs/GETTING_STARTED.md) and [broker API documentation](https://protrade.jainam.in/open-apidocs/v2/index.html).
+The listener binds only to `127.0.0.1:8765`, starts before the browser opens, suppresses callback request logging, and closes after capture, cancellation or timeout. Never expose this port publicly. It expects GET callback query parameters named `userId` and `authCode`. This is broker SSO, not MCP OAuth. No broker password is collected by the package. No undocumented state parameter is added; the broker callback is not claimed to have cryptographic state correlation. The broker session exchange validates the authorization code with your app secret.
+
+**Important limitation:** automated tests use synthetic callbacks, not real Jainam accounts. Loopback Redirect URL acceptance, actual callback fields, MFA and API entitlement must be verified with your own app. This update does not claim a successful production login for every account.
+
+### Existing external callback or loopback URL rejected
+
+If Jainam refuses a loopback redirect, or you already have a reachable callback you control, retain that registered URL and run:
+
+```sh
+python -m jainam_mcp login --manual
+```
+
+Enter APP Code and Secret Key, complete browser sign-in, then enter the `userId` and fresh `authCode` received by your callback at the hidden terminal prompts. The package cannot receive a callback sent to an arbitrary website. Do not use someone else's callback URL. Expired or already-used codes require a new login. If your broker response has no unique `userSession`, login stops without printing its payload.
+
+If port 8765 is occupied, close the other app or use the manual method. Remote SSH/headless setup should use a callback you control and the manual method; localhost in a remote browser is not necessarily the machine running Python.
+
+### Upgrading an existing clone
+
+Keep your private credentials file; do not delete or publish it. From your clone:
+
+```sh
+git fetch origin --tags
+git switch --detach v0.1.3
+python -m pip install .
+python -m jainam_mcp setup
+python -m jainam_mcp doctor --online
+```
+
+Restart each MCP client after renewal. If the existing clone is elsewhere, use its activated environment. Only run commands for your operating system; Windows `py` and `Scripts\python.exe` commands do not work in macOS zsh.
 
 ### Advanced: environment variables
 

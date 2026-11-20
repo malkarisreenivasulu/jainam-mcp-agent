@@ -15,6 +15,7 @@ from jainam_api import Client, build_login_url
 
 from jainam_mcp import __version__
 from jainam_mcp.config import ConfigError, Credentials, default_path, load, save
+from jainam_mcp.login import CALLBACK, capture_callback
 from jainam_mcp.service import Service
 
 
@@ -65,7 +66,9 @@ def main(argv: list[str] | None = None) -> int:
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("serve", help="Run MCP over stdio; usually launched by your AI client")
     sub.add_parser("configure", help="Store an existing session using hidden terminal prompts")
-    sub.add_parser("login", help="Open Jainam SSO and exchange a fresh auth code locally")
+    login = sub.add_parser("login", help="Guided browser sign-in with automatic local callback")
+    login.add_argument("--manual", action="store_true", help="Use an existing external callback instead")
+    sub.add_parser("setup", help="First-time guided browser sign-in")
     doctor = sub.add_parser("doctor", help="Offline configuration check by default")
     doctor.add_argument("--online", action="store_true", help="Make one read-only funds request")
     client_config = sub.add_parser("client-config", help="Print credential-free client JSON")
@@ -73,7 +76,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     path = args.config.expanduser() if args.config else None
     try:
-        if args.command in {"configure", "login"}:
+        if args.command in {"configure", "login", "setup"}:
             if not sys.stdin.isatty():
                 raise ConfigError("Use an interactive terminal; refusing visible credential input.")
             warnings.filterwarnings("error", category=getpass.GetPassWarning)
@@ -87,16 +90,23 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Saved locally to {destination}. No credentials were printed.")
             print("Restart your MCP client after renewing a session.")
             return 0
-        if args.command == "login":
+        if args.command in {"login", "setup"}:
             app_code = getpass.getpass("Your developer appCode (hidden): ").strip()
-            print("Opening Jainam sign-in. Complete it using your registered callback URL.")
-            if not webbrowser.open(build_login_url(app_code)):
-                raise ConfigError(
-                    "Browser could not open. Use your developer app's login URL, then configure."
-                )
-            user_id = getpass.getpass("userId from your callback (hidden): ").strip()
-            auth_code = getpass.getpass("Fresh authCode from your callback (hidden): ").strip()
-            api_secret = getpass.getpass("Your apiSecret (hidden, not saved): ").strip()
+            api_secret = getpass.getpass(
+                "Your developer Secret Key / apiSecret (hidden, not saved): "
+            ).strip()
+            if not app_code or not api_secret:
+                raise ConfigError("APP Code and Secret Key are required; client ID alone cannot sign in.")
+            if getattr(args, "manual", False):
+                print("Opening Jainam sign-in. Complete it using your registered callback URL.")
+                if not webbrowser.open(build_login_url(app_code)):
+                    raise ConfigError("Browser could not open. Check your default browser and retry.")
+                user_id = getpass.getpass("userId from your callback (hidden): ").strip()
+                auth_code = getpass.getpass("Fresh authCode from your callback (hidden): ").strip()
+            else:
+                print(f"Register this exact Redirect URL in your Jainam developer app: {CALLBACK}")
+                print("Complete login in the browser within 3 minutes. Keep this terminal open.")
+                user_id, auth_code = capture_callback(build_login_url(app_code))
             with LoginSession() as transport:
                 response = Client(session=transport).exchange_auth_code(user_id, auth_code, api_secret)
             destination = save(Credentials(user_id, extract_session(response)), path)
@@ -107,11 +117,14 @@ def main(argv: list[str] | None = None) -> int:
             report = service.status()
             report["credentials_file_present"] = (path or default_path()).exists()
             if args.online:
-                report["connection_tested"] = True
+                report["connection_tested"] = service.credentials is not None
                 result = service.account("funds")
                 report["online_ok"] = result["ok"]
                 if not result["ok"]:
                     report["error"] = result.get("error")
+                    report["next_step"] = (
+                        "Run python -m jainam_mcp setup; use configure only for an existing session."
+                    )
             print(json.dumps(report, indent=2))
             return 0 if report["credentials_configured"] and report.get("online_ok", True) else 1
         from jainam_mcp.server import create_server
