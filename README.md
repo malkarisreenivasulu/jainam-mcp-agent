@@ -7,6 +7,166 @@ Connect Claude Desktop, VS Code Copilot, or a supported ChatGPT tunnel to **your
 
 **Developed by Sreenivasulu Malkari.** Built on [Jainam API Python](https://github.com/malkarisreenivasulu/jainam-api-python) and the official MCP Python SDK. Independent community software, not an official Jainam product.
 
+## First time? Follow these 7 steps
+
+**You do not need to write Python code.** This guide connects **Claude Desktop** to your own Jainam account. You enter your developer app details once, finish Jainam's browser login, and then ask Claude for account information.
+
+### Step 1 — Install the three things you need
+
+| Install | What it is for |
+|---|---|
+| [Python 3.11–3.14](https://www.python.org/downloads/) | Runs Jainam MCP. On Windows, select **Add Python to PATH** during installation. |
+| [Git](https://git-scm.com/downloads) | Downloads the project. |
+| [Claude Desktop](https://claude.ai/download) | The app where you will ask questions. |
+
+You also need **your own Jainam account with ProTrade developer/API access**. Installing this project does not create a broker account or grant API access. If you do not have that access, confirm eligibility with Jainam first.
+
+### Step 2 — Create your Jainam app once
+
+1. Open [Jainam Developers](https://protrade.jainam.in/developers) in your browser and sign in.
+2. Open **My Apps** and create a new app, or edit your existing app. Fill in the required app/contact details.
+3. Enter the following URL in **Redirect URL**:
+
+   ```text
+   http://127.0.0.1:8765/callback
+   ```
+
+4. Click **Save/Update**. Keep this page open: you will need the app's **APP Code** and **Secret Key** in Step 4.
+
+**What about Postback URL?** Leave it blank if Jainam permits. If the form requires it, ask Jainam for its supported configuration before continuing. This MCP does not receive postbacks. Do not enter a dummy URL or assume the login callback above is a postback endpoint.
+
+**APP Code is not your trading client ID.** Use the APP Code and Secret Key from the same app. Keep them private; do not paste them into Claude, GitHub, or this README. The Redirect URL above is a public setup value, not a secret; `127.0.0.1` means your own computer.
+
+### Step 3 — Download and open Connect
+
+Choose **only your computer's instructions** below. Open Terminal on Mac or PowerShell on Windows, then paste the matching commands. Press Enter to run them.
+
+<details open>
+<summary><strong>Mac — first installation</strong></summary>
+
+```sh
+cd ~
+git clone --branch v0.1.5 https://github.com/malkarisreenivasulu/jainam-mcp-agent.git
+cd jainam-mcp-agent
+open Connect.command
+```
+
+</details>
+
+<details>
+<summary><strong>Windows — first installation</strong></summary>
+
+```powershell
+cd $HOME
+git clone --branch v0.1.5 https://github.com/malkarisreenivasulu/jainam-mcp-agent.git
+cd jainam-mcp-agent
+.\Connect.bat
+```
+
+</details>
+
+<details>
+<summary><strong>Already downloaded it? Update the existing folder instead</strong></summary>
+
+Do not run `git clone` again. From Terminal/PowerShell:
+
+```sh
+cd ~/jainam-mcp-agent
+git fetch origin --tags
+git switch --detach v0.1.5
+```
+
+Then double-click **Connect.command** on Mac or **Connect.bat** on Windows inside the project folder. If you saved the folder somewhere else, open that folder instead. A detached-HEAD notice is normal when using a fixed release tag.
+
+</details>
+
+The Connect launcher prepares the project automatically. The first run may take a few minutes and show installation messages. You do not need to run pip commands or activate a Python environment yourself.
+
+### Step 4 — Enter your app details and finish browser login
+
+1. At **APP Code (hidden)**, paste your own APP Code and press Enter.
+2. At **Secret Key (hidden)**, paste that app's Secret Key and press Enter. **You will not see characters while entering these values; that is normal.**
+3. Jainam opens in your browser. Finish its login/MFA on this same computer within three minutes. Keep the Connect window open.
+4. Return to the Connect window. Wait for:
+
+   ```text
+   Connected. You can now ask your MCP client for your Jainam account data.
+   ```
+
+**That is the success message.** Connect checks a read-only account request before displaying it. `[Process completed]` afterward is normal: the sign-in window has finished its job. You can close it.
+
+Do not paste the browser's callback address into Terminal. The app receives it automatically. Your app details are remembered in a private **plaintext file on your computer, outside this project**; authorization codes are never saved. Do not upload the private app/session files.
+
+### Step 5 — Generate Claude's configuration automatically
+
+Open a **new** Terminal/PowerShell window. Choose your operating system and run:
+
+**Mac:**
+
+```sh
+cd ~/jainam-mcp-agent
+.venv/bin/python -m jainam_mcp client-config claude
+```
+
+**Windows PowerShell:**
+
+```powershell
+cd "$HOME\jainam-mcp-agent"
+.\.venv\Scripts\python.exe -m jainam_mcp client-config claude
+```
+
+If your project is somewhere else, open Terminal/PowerShell in that folder and run the second line. You will see configuration text starting with `{` and containing `mcpServers` and `jainam`. This text already contains **your correct Python path**. Leave it visible for the next step.
+
+**Do not copy `/absolute/path/...` from an example.** You do not need to type your username or guess a path. The output above supplies the right one. This is a Python MCP; do not replace its generated command with `npx`.
+
+### Step 6 — Add Jainam to Claude once
+
+1. Open **Claude Desktop → Settings → Developer → Edit Config**. Menu names can vary by version.
+2. If the configuration file is **empty**, paste the entire generated configuration from Step 5.
+3. If it **already has MCP servers**, add only the generated **`jainam` entry inside the existing `mcpServers` object**. Keep your other servers and application preferences. Do not paste a second whole JSON document or create a second `mcpServers` section.
+4. Save the file. Entries need commas between them, with no comma after the last entry.
+5. **Fully quit Claude Desktop and reopen it once.** On Mac, use **Claude → Quit**; closing only the window may leave it running.
+
+You do **not** put APP Code, Secret Key, authorization code or session into Claude's configuration. The generated Jainam entry contains only its launch command and arguments. [See the detailed Claude guide](docs/CLAUDE.md) if you already have a large configuration file.
+
+### Step 7 — Ask your first question
+
+Start a new conversation in Claude and type:
+
+> Use Jainam to show my available funds.
+
+Approve the Jainam tool if Claude asks. Then try:
+
+> Show my Jainam holdings in a simple table.
+
+Claude must have the Jainam tools available and successfully read the account before it can answer with your data. If the tools are missing, check Step 5's generated path and Step 6's restart; do not reinstall everything.
+
+## What do I do tomorrow?
+
+**Open Claude and ask your question.** You do not repeat the installation or app setup.
+
+- A valid session is reused.
+- If the local MCP needs a new session, finish the browser login it opens, then ask again. Your app keys do not need to be entered again.
+- If sign-in fails, open **Connect.command** / **Connect.bat** to retry. It does not keep opening browser tabs automatically.
+- Normal session renewal does not require editing Claude's configuration or restarting the MCP.
+
+## Stuck? Match the message below
+
+| What you see | What to do |
+|---|---|
+| `destination path ... already exists` | Use Step 3's **Already downloaded it?** instructions. Do not clone again. |
+| `python: command not found` on Mac | Use the exact `.venv/bin/python` command in Step 5 after Connect finishes. |
+| No characters at APP Code/Secret Key | Hidden input is intentional. Paste the value and press Enter. |
+| `Connected` followed by `[Process completed]` | Sign-in succeeded. Continue with Step 5; Claude starts the server itself. |
+| No Jainam tools in Claude | Use the generated path, save valid JSON, fully quit/reopen Claude. |
+| `AUTH_*` or `SESSION_NOT_VERIFIED` | Login is not complete. [Check the error guide](docs/TROUBLESHOOTING.md); share only its safe diagnostic, never keys or callback URLs. |
+
+Using **VS Code**? Follow its [client guide](docs/VSCODE.md) after Step 4. **ChatGPT** has [separate tunnel/workspace requirements](docs/CHATGPT.md); the Claude JSON above does not connect ChatGPT.
+
+Advanced options, custom install locations and external callbacks: [full guide](docs/GETTING_STARTED.md). To replace rotated app keys, run Connect with `--replace-app`; external callbacks use `--manual` and do not support automatic loopback renewal.
+
+## What can this project read?
+
 | You can ask | What the server does |
 |---|---|
 | “Show my funds and holdings” | Reads your account data |
@@ -16,51 +176,6 @@ Connect Claude Desktop, VS Code Copilot, or a supported ChatGPT tunnel to **your
 | “Fetch historical candles for this token” | Reads historical data, subject to broker availability |
 
 **No order placement, modification, cancellation, square-off, autonomous trading, or generic HTTP tool.** No subscription, multicast server, Redis, Docker, or KuberaOS installation is needed. Live streaming and live quotes are not exposed. Five reusable MCP prompt templates help clients structure analysis.
-
-## Start here
-
-1. Install Python 3.11–3.14 and Git once. Clone/download this repository, or update your existing clone to v0.1.5. **Do not clone again into a folder that already exists.**
-2. In [Jainam Developers](https://protrade.jainam.in/developers), create/edit your own app and register **Redirect URL: `http://127.0.0.1:8765/callback`**. Save/Update. Postback is separate: leave blank if permitted; if mandatory, confirm the supported configuration with Jainam. This MCP has no postback receiver.
-3. On macOS, double-click **Connect.command**. On Windows, double-click **Connect.bat**. The launcher prepares the local Python environment and installs/updates this checkout when necessary. Enter APP Code and Secret Key once, then finish Jainam sign-in in the browser.
-4. Wait for **Connected**. The command verifies account access before displaying success. Connect your AI client using its guide below, then ask for holdings or funds.
-
-App details are remembered **only on your computer**, in a private plaintext file outside the repository. Sessions are separate. Do not upload either file. Subsequent connections reuse a valid session. When a local MCP read discovers a missing/expired session, saved app details let it open browser login without terminal prompts; finish login and ask again. The running MCP reloads the saved session automatically. If automatic sign-in fails, run Connect again; it does not keep opening browser tabs.
-
-Prefer Terminal? Use the **same command every time**:
-
-```sh
-python3 scripts/connect.py
-```
-
-On Windows use `py -3 scripts\connect.py`. Existing virtualenv users can run `jainam-mcp connect` directly. Replace a rotated APP Code/Secret Key using `python3 scripts/connect.py --replace-app`. External callbacks use `--manual` and require manual callback input; automatic renewal is for local loopback browser login on the same computer. The developer portal setting must be registered manually; the MCP cannot update it.
-
-[Full step-by-step guide](docs/GETTING_STARTED.md) · [Troubleshooting](docs/TROUBLESHOOTING.md)
-
-A user-reported v0.1.5 login reached verified Connected. Each user still needs their own API entitlement and successful login; this does not establish universal access. If setup reports an unsupported response, share only its safe diagnostic, never keys or callback URLs.
-
-### Connect Claude Desktop once
-
-After Connect says **Connected**, generate the configuration from your project folder:
-
-**macOS:**
-
-```sh
-.venv/bin/python -m jainam_mcp client-config claude
-```
-
-**Windows PowerShell:**
-
-```powershell
-.\.venv\Scripts\python.exe -m jainam_mcp client-config claude
-```
-
-This prints **your real absolute Python path**. In Claude Desktop open **Settings → Developer → Edit Config**. If the file is empty, paste the generated JSON. If it already has servers, add only the generated `jainam` entry inside its existing `mcpServers` object. Keep other servers and preferences. Save, fully quit Claude and reopen it once.
-
-**Never paste `/absolute/path/...` from an example as your command. Never paste APP Code, Secret Key or session into the client JSON.** This is a Python MCP, not an npm package launched with `npx`.
-
-Then ask: **“Use Jainam to show my available funds.”** `[Process completed]` in the sign-in window is normal; Claude launches the server itself.
-
-[Claude walkthrough](docs/CLAUDE.md) · [VS Code](docs/VSCODE.md) · [ChatGPT's separate requirements](docs/CHATGPT.md)
 
 ## Copy a prompt. See your portfolio clearly.
 
