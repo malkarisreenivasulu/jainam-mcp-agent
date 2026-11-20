@@ -119,15 +119,63 @@ If your project is somewhere else, open Terminal/PowerShell in that folder and r
 
 **Do not copy `/absolute/path/...` from an example.** You do not need to type your username or guess a path. The output above supplies the right one. This is a Python MCP; do not replace its generated command with `npx`.
 
-### Step 6 — Add Jainam to Claude once
+### Step 6 — Put the generated configuration into Claude
 
-1. Open **Claude Desktop → Settings → Developer → Edit Config**. Menu names can vary by version.
-2. If the configuration file is **empty**, paste the entire generated configuration from Step 5.
-3. If it **already has MCP servers**, add only the generated **`jainam` entry inside the existing `mcpServers` object**. Keep your other servers and application preferences. Do not paste a second whole JSON document or create a second `mcpServers` section.
-4. Save the file. Entries need commas between them, with no comma after the last entry.
-5. **Fully quit Claude Desktop and reopen it once.** On Mac, use **Claude → Quit**; closing only the window may leave it running.
+**Use the installed Claude Desktop app for these steps.** Open the app itself, not a Claude website tab.
 
-You do **not** put APP Code, Secret Key, authorization code or session into Claude's configuration. The generated Jainam entry contains only its launch command and arguments. [See the detailed Claude guide](docs/CLAUDE.md) if you already have a large configuration file.
+**6A. Open Claude's settings file**
+
+1. On **Mac**, click **Claude** in the top menu bar, then **Settings**. On **Windows**, open Claude's application menu and choose **Settings**. Exact menu placement may vary by version.
+2. Select **Developer**, then **Edit Config**. You are looking for **`claude_desktop_config.json`**.
+3. If a folder opens instead of an editor, right-click that file and open it in a plain-text editor, such as VS Code, Notepad on Windows, or TextEdit on Mac. Do not use Word or a rich-text document. If using TextEdit, choose **Format → Make Plain Text** if that option appears.
+4. Before editing an existing file, save a copy as a backup. Keep that backup private because other servers may have credentials in it.
+
+**Can't find the file?** These are the usual locations:
+
+- Mac: in Finder choose **Go → Go to Folder**, paste `~/Library/Application Support/Claude/`, and press Enter.
+- Windows: press **Windows+R**, paste `%APPDATA%\Claude`, and press Enter.
+
+Look for `claude_desktop_config.json` in that folder. If it is not there, return to Claude's **Developer → Edit Config** to create/open it. Do not create a `.txt` file with a similar name. If your Claude version does not offer local MCP/Developer settings, check that version's supported configuration before continuing.
+
+**6B. Copy the generated configuration from Step 5**
+
+You can select the generated text in Terminal, or copy it directly to your clipboard with the matching command below, from the project folder:
+
+**Mac:**
+
+```sh
+.venv/bin/python -m jainam_mcp client-config claude | pbcopy
+```
+
+**Windows PowerShell:**
+
+```powershell
+.\.venv\Scripts\python.exe -m jainam_mcp client-config claude | Set-Clipboard
+```
+
+These commands copy configuration, not passwords. It is normal for them to print nothing. Paste with **Command+V** on Mac or **Ctrl+V** on Windows.
+
+**6C. Choose the situation that matches your file**
+
+| Your configuration file currently contains… | What to paste |
+|---|---|
+| Nothing, or only `{}` | Select all and paste the **entire generated configuration**. |
+| Other settings, but no `mcpServers` | Keep those settings. Add the generated **`"mcpServers": { ... }` property** inside the file's outer `{ }`. Separate it from the other properties with a comma. Do not paste another whole document around them. |
+| An existing `mcpServers` object with other servers | Keep the existing object. Copy only **`"jainam": { ... }`** from the generated text and add it alongside the other server entries. Add a comma between entries. |
+| A `jainam` entry already inside `mcpServers` | Replace **only that existing Jainam entry** with the newly generated entry. Do not add a duplicate. |
+
+For an existing configuration, paste the generated output into a temporary plain-text editor tab so you can select the required part. The `...` above means the actual contents from your generated output—**do not type three dots into JSON**.
+
+Keep your other servers and application preferences. Use one outer JSON document and one `mcpServers` object. There must be **commas between entries**, **no comma after the last entry**, and **no comments**. Your generated Python path is already correct; do not replace it with `/absolute/path/...`, `python`, or `npx`.
+
+**6D. Save and restart Claude once**
+
+1. Save as **`claude_desktop_config.json`**, keeping the `.json` extension.
+2. Fully quit Claude. On Mac use **Claude → Quit** or **Command+Q**. On Windows use the application's **Quit/Exit** action, including the tray icon if Claude is still running there. Closing only the window may leave it running.
+3. Reopen Claude Desktop and start a new conversation.
+4. Check that Jainam is listed in the local MCP/developer settings and that its tools are available to the conversation. Tool controls can vary by Claude version. Continue to Step 7 and approve the Jainam read tool if requested.
+
+**Never put APP Code, Secret Key, authorization code or session in Claude's JSON.** Do not copy someone else's complete configuration or unrelated tokens. This step registers the local program; your private Jainam login details are already saved separately.
 
 ### Step 7 — Ask your first question
 
