@@ -67,6 +67,15 @@ On POSIX the new file is mode `0600`. On Windows protect it with your user accou
 
 ### Recommended: guided sign-in with your developer app
 
+**Set these fields while creating the app, before running `setup`:**
+
+| Jainam app field | Required action for this MCP |
+|---|---|
+| Redirect URL | Enter exactly `http://127.0.0.1:8765/callback`. This is the MCP default, not your APP Code. Click Save/Update. |
+| Postback URL | Leave blank if allowed. The package does not receive postbacks. If Jainam requires this field, ask Jainam for its supported configuration before proceeding. Do not use a dummy URL or `/callback` as an implemented postback endpoint. |
+
+The default is built into the MCP, but **registration in your Jainam app is manual and required**. The command cannot update your developer app settings. Do not substitute `localhost` in only one place: this listener uses the exact `127.0.0.1:8765` address. If Jainam rejects the loopback URL, use the manual method below with a real callback you control.
+
 1. Open the [Jainam developer portal](https://protrade.jainam.in/developers) and create or edit your own app. This release uses **ProTrade Open API v2**, not XTS API keys.
 2. Fill in the required developer contact/app fields. Set **Redirect URL** to exactly `http://127.0.0.1:8765/callback` and save. Postback URL is a separate broker setting; this package does not implement a postback receiver. Follow Jainam's requirements for that field rather than assuming the login callback handles it.
 3. Note the app's **APP Code** and **Secret Key**. APP Code identifies your developer app; your trading client ID is different. API eligibility and available app settings depend on Jainam.

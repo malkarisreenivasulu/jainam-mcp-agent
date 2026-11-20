@@ -42,6 +42,15 @@ The MCP server reads data; your AI client renders charts if supported. Sector ch
 3. Connect [Claude Desktop](docs/CLAUDE.md), [VS Code](docs/VSCODE.md), or [ChatGPT](docs/CHATGPT.md).
 4. Ask: **“Use jainam_status and tell me whether it is configured.”** This first call is offline.
 
+**Before running setup: create or edit your app in [Jainam Developers](https://protrade.jainam.in/developers).** Register the MCP default below and click **Save/Update**. The MCP cannot fill in Jainam's app form for you.
+
+| App field | What to enter |
+|---|---|
+| Redirect URL | `http://127.0.0.1:8765/callback` — enter this exact default when creating the app. |
+| Postback URL | Leave blank if Jainam permits. The MCP has no postback receiver. If required, confirm Jainam's supported setup with Jainam; do not enter a dummy URL or reuse the login callback. |
+
+`localhost` and `127.0.0.1` refer to your computer, but use the exact `127.0.0.1` URL above consistently with this package's listener. Jainam's acceptance of a loopback redirect still requires verification with your app; an external callback you control is supported by `login --manual`.
+
 If you already have Python and Git, these commands install the tagged release in an isolated folder:
 
 ```sh
